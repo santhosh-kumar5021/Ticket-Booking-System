@@ -3,17 +3,22 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { api } from '../services/api';
 import {
-  Ticket,
-  Calendar,
+  IconExplore,
+  IconTickets,
+  IconOffers,
+  IconHelp,
+  IconSignIn,
+  IconEvents
+} from './NavIcons';
+import {
   Layers,
   BarChart3,
   QrCode,
   Mail,
-  UserCheck,
   LogOut,
   ChevronDown,
   Clock,
-  User
+  Ticket
 } from 'lucide-react';
 
 export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
@@ -88,9 +93,9 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
         </div>
       )}
 
-      {/* Main Navigation Bar — Filtered Strictly by Role */}
+      {/* Main Navigation Bar */}
       <header className="navbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           {/* Brand Logo */}
           <div
             className="nav-brand"
@@ -102,113 +107,110 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
             }}
           >
             <div className="nav-brand-icon">
-              <Ticket size={20} color="#ffffff" />
+              <Ticket size={18} color="#ffffff" />
             </div>
             <span>TicketPass</span>
           </div>
 
-          {/* Navigation Links — Strictly Role-Based */}
+          {/* Events Pill */}
+          <button
+            onClick={() => onNavigate('events')}
+            className={`nav-link ${currentPage === 'events' ? 'active' : ''}`}
+            style={{
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(255, 255, 255, 0.04)',
+              borderRadius: 8,
+              padding: '6px 14px'
+            }}
+          >
+            <IconEvents size={17} />
+            <span>Events</span>
+          </button>
+        </div>
+
+        {/* Center & Right Navigation Links with Futuristic Icons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <nav className="nav-links">
-            {/* 1. Everyone sees Event Catalog */}
+            {/* Explore Link */}
             <button
               onClick={() => onNavigate('events')}
               className={`nav-link ${currentPage === 'events' ? 'active' : ''}`}
             >
-              <Calendar size={15} />
-              <span>Events</span>
+              <IconExplore size={18} />
+              <span>Explore</span>
             </button>
 
-            {/* 2. Customer specific views */}
-            {user && user.role === 'CUSTOMER' && (
-              <>
-                <button
-                  onClick={() => onNavigate('my-bookings')}
-                  className={`nav-link ${currentPage === 'my-bookings' ? 'active' : ''}`}
-                >
-                  <Ticket size={15} />
-                  <span>My Tickets</span>
-                </button>
+            {/* My Tickets Link */}
+            <button
+              onClick={() => {
+                if (!user) onOpenAuthModal();
+                else onNavigate('my-bookings');
+              }}
+              className={`nav-link ${currentPage === 'my-bookings' ? 'active' : ''}`}
+            >
+              <IconTickets size={18} />
+              <span>My Tickets</span>
+            </button>
 
-                <button
-                  onClick={() => onNavigate('my-waitlist')}
-                  className={`nav-link ${currentPage === 'my-waitlist' ? 'active' : ''}`}
-                >
-                  <Clock size={15} />
-                  <span>Waitlist</span>
-                </button>
-              </>
-            )}
+            {/* Offers / Waitlist Link */}
+            <button
+              onClick={() => {
+                if (!user) onOpenAuthModal();
+                else onNavigate('my-waitlist');
+              }}
+              className={`nav-link ${currentPage === 'my-waitlist' ? 'active' : ''}`}
+            >
+              <IconOffers size={18} />
+              <span>Offers</span>
+            </button>
 
-            {/* 3. Organiser specific views */}
+            {/* Help / Mailbox Link */}
+            <button
+              onClick={() => {
+                if (!user) onOpenAuthModal();
+                else onNavigate('mailbox');
+              }}
+              className={`nav-link ${currentPage === 'mailbox' ? 'active' : ''}`}
+            >
+              <IconHelp size={18} />
+              <span>Help</span>
+            </button>
+
+            {/* Organiser Hub */}
             {isOrganiser && (
               <button
                 onClick={() => onNavigate('organiser')}
                 className={`nav-link ${currentPage === 'organiser' ? 'active' : ''}`}
               >
-                <BarChart3 size={15} />
+                <BarChart3 size={17} className="nav-svg-icon" />
                 <span>Organiser Hub</span>
               </button>
             )}
 
-            {/* 4. Admin specific views */}
+            {/* Admin Venue Builder */}
             {isAdmin && (
               <button
                 onClick={() => onNavigate('admin')}
                 className={`nav-link ${currentPage === 'admin' ? 'active' : ''}`}
               >
-                <Layers size={15} />
+                <Layers size={17} className="nav-svg-icon" />
                 <span>Venue Builder</span>
               </button>
             )}
 
-            {/* 5. Gate Scanner only for Organiser and Admin (Venue Staff) */}
+            {/* Gate Scanner */}
             {(isOrganiser || isAdmin) && (
               <button
                 onClick={() => onNavigate('scanner')}
                 className={`nav-link ${currentPage === 'scanner' ? 'active' : ''}`}
               >
-                <QrCode size={15} />
+                <QrCode size={17} className="nav-svg-icon" />
                 <span>Gate Scanner</span>
               </button>
             )}
           </nav>
-        </div>
 
-        {/* Right side Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* In-App Mailbox */}
-          {user && (
-            <button
-              onClick={() => onNavigate('mailbox')}
-              className={`btn ${currentPage === 'mailbox' ? 'btn-primary' : 'btn-outline'}`}
-              style={{ padding: '7px 14px', fontSize: 13, position: 'relative' }}
-              title="View In-App Emails & QR Code tickets"
-            >
-              <Mail size={15} />
-              <span>Mailbox</span>
-              {emailCount > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: -5,
-                  right: -5,
-                  background: '#ef4444',
-                  color: '#fff',
-                  borderRadius: '50%',
-                  width: 18,
-                  height: 18,
-                  fontSize: 10,
-                  fontWeight: 800,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {emailCount}
-                </span>
-              )}
-            </button>
-          )}
-
-          {/* User Profile Menu */}
+          {/* User Profile Menu or Sign In Button */}
           {user ? (
             <div style={{ position: 'relative' }}>
               <button
@@ -218,14 +220,15 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  padding: '6px 12px'
+                  padding: '6px 12px',
+                  borderRadius: 8
                 }}
               >
                 <div style={{
                   width: 24,
                   height: 24,
                   borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.1)',
+                  background: 'linear-gradient(135deg, #00b894, #06b6d4)',
                   color: '#fff',
                   fontSize: 11,
                   fontWeight: 800,
@@ -241,7 +244,7 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                 <ChevronDown size={14} color="var(--text-secondary)" />
               </button>
 
-              {/* Clean User Dropdown Menu */}
+              {/* User Dropdown Menu */}
               {showUserMenu && (
                 <div
                   className="glass-card"
@@ -266,50 +269,31 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                     </div>
                   </div>
 
-                  {/* Quick role shortcuts */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
-                    {user.role === 'CUSTOMER' && (
-                      <>
-                        <button
-                          onClick={() => { onNavigate('my-bookings'); setShowUserMenu(false); }}
-                          className="btn btn-ghost"
-                          style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 12 }}
-                        >
-                          <Ticket size={14} />
-                          <span>My Tickets</span>
-                        </button>
-                        <button
-                          onClick={() => { onNavigate('my-waitlist'); setShowUserMenu(false); }}
-                          className="btn btn-ghost"
-                          style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 12 }}
-                        >
-                          <Clock size={14} />
-                          <span>Waitlist</span>
-                        </button>
-                      </>
-                    )}
-
-                    {isOrganiser && (
-                      <button
-                        onClick={() => { onNavigate('organiser'); setShowUserMenu(false); }}
-                        className="btn btn-ghost"
-                        style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 12 }}
-                      >
-                        <BarChart3 size={14} />
-                        <span>Organiser Hub</span>
-                      </button>
-                    )}
-
-                    {isAdmin && (
-                      <button
-                        onClick={() => { onNavigate('admin'); setShowUserMenu(false); }}
-                        className="btn btn-ghost"
-                        style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 12 }}
-                      >
-                        <Layers size={14} />
-                        <span>Venue Builder</span>
-                      </button>
-                    )}
+                    <button
+                      onClick={() => { onNavigate('my-bookings'); setShowUserMenu(false); }}
+                      className="btn btn-ghost"
+                      style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 12 }}
+                    >
+                      <IconTickets size={15} />
+                      <span>My Tickets</span>
+                    </button>
+                    <button
+                      onClick={() => { onNavigate('my-waitlist'); setShowUserMenu(false); }}
+                      className="btn btn-ghost"
+                      style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 12 }}
+                    >
+                      <IconOffers size={15} />
+                      <span>Waitlist & Offers</span>
+                    </button>
+                    <button
+                      onClick={() => { onNavigate('mailbox'); setShowUserMenu(false); }}
+                      className="btn btn-ghost"
+                      style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 12 }}
+                    >
+                      <Mail size={15} />
+                      <span>In-App Mailbox {emailCount > 0 && `(${emailCount})`}</span>
+                    </button>
                   </div>
 
                   <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8 }}>
@@ -330,8 +314,11 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
               )}
             </div>
           ) : (
-            <button onClick={onOpenAuthModal} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 13 }}>
-              <UserCheck size={15} />
+            <button
+              onClick={onOpenAuthModal}
+              className="nav-btn-signin"
+            >
+              <IconSignIn size={18} />
               <span>Sign In</span>
             </button>
           )}
