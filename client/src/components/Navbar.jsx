@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
-  const { user, logout, switchUser, demoUsers, isOrganiser, isAdmin, isCustomer } = useAuth();
+  const { user, logout, isOrganiser, isAdmin, isCustomer } = useAuth();
   const { activeOffer, clearOffer } = useNotification();
   const [emailCount, setEmailCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -208,7 +208,7 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
             </button>
           )}
 
-          {/* User Profile / Auth Button */}
+          {/* User Profile Menu */}
           {user ? (
             <div style={{ position: 'relative' }}>
               <button
@@ -243,7 +243,7 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                 <ChevronDown size={14} color="var(--text-secondary)" />
               </button>
 
-              {/* User Dropdown Menu */}
+              {/* Clean User Dropdown Menu */}
               {showUserMenu && (
                 <div
                   className="glass-card"
@@ -251,16 +251,16 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                     position: 'absolute',
                     top: 'calc(100% + 8px)',
                     right: 0,
-                    width: 260,
+                    width: 240,
                     padding: '12px',
                     zIndex: 100,
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.8)',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.85)',
                     border: '1px solid rgba(255,255,255,0.12)'
                   }}
                 >
                   <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: 8 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{user.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{user.email}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
                     <div style={{ marginTop: 6 }}>
                       <span className={`badge ${user.role === 'ADMIN' ? 'badge-gold' : user.role === 'ORGANISER' ? 'badge-primary' : 'badge-emerald'}`}>
                         {user.role}
@@ -268,44 +268,53 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                     </div>
                   </div>
 
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '4px 10px', letterSpacing: 0.5 }}>
-                    Switch Account Profile:
-                  </div>
+                  {/* Quick role shortcuts */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
+                    {user.role === 'CUSTOMER' && (
+                      <>
+                        <button
+                          onClick={() => { onNavigate('my-bookings'); setShowUserMenu(false); }}
+                          className="btn btn-ghost"
+                          style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 12 }}
+                        >
+                          <Ticket size={14} />
+                          <span>My Tickets</span>
+                        </button>
+                        <button
+                          onClick={() => { onNavigate('my-waitlist'); setShowUserMenu(false); }}
+                          className="btn btn-ghost"
+                          style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 12 }}
+                        >
+                          <Clock size={14} />
+                          <span>Waitlist</span>
+                        </button>
+                      </>
+                    )}
 
-                  <div style={{ maxHeight: 180, overflowY: 'auto' }}>
-                    {demoUsers.map(du => (
+                    {isOrganiser && (
                       <button
-                        key={du.id}
-                        onClick={async () => {
-                          await switchUser(du.id);
-                          setShowUserMenu(false);
-                          if (du.role === 'ADMIN') onNavigate('admin');
-                          else if (du.role === 'ORGANISER') onNavigate('organiser');
-                          else onNavigate('events');
-                        }}
-                        style={{
-                          width: '100%',
-                          textAlign: 'left',
-                          padding: '7px 10px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          background: du.id === user.id ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                          border: 'none',
-                          borderRadius: 6,
-                          color: du.id === user.id ? '#a5b4fc' : 'var(--text-secondary)',
-                          cursor: 'pointer',
-                          fontSize: 12,
-                          marginBottom: 2
-                        }}
+                        onClick={() => { onNavigate('organiser'); setShowUserMenu(false); }}
+                        className="btn btn-ghost"
+                        style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 12 }}
                       >
-                        <span style={{ fontWeight: du.id === user.id ? 700 : 500 }}>{du.name}</span>
-                        <span style={{ fontSize: 10, textTransform: 'uppercase', opacity: 0.7 }}>{du.role}</span>
+                        <BarChart3 size={14} />
+                        <span>Organiser Hub</span>
                       </button>
-                    ))}
+                    )}
+
+                    {isAdmin && (
+                      <button
+                        onClick={() => { onNavigate('admin'); setShowUserMenu(false); }}
+                        className="btn btn-ghost"
+                        style={{ width: '100%', justifyContent: 'flex-start', padding: '6px 10px', fontSize: 12 }}
+                      >
+                        <Layers size={14} />
+                        <span>Venue Builder</span>
+                      </button>
+                    )}
                   </div>
 
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: 8, paddingTop: 8 }}>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8 }}>
                     <button
                       onClick={() => {
                         logout();

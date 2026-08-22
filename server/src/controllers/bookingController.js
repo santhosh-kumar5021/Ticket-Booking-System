@@ -9,7 +9,7 @@ import { reallocateSeatOrRelease } from '../services/holdWorker.js';
  * Confirm a booking for held seats
  */
 export async function confirmBooking(req, res) {
-  const { showId, showSeatIds = [], paymentDetails } = req.body;
+  const { showId, showSeatIds = [], paymentDetails, deliveryEmail } = req.body;
   const user = req.user;
 
   if (!Array.isArray(showSeatIds) || showSeatIds.length === 0) {
@@ -65,16 +65,18 @@ export async function confirmBooking(req, res) {
         });
       }
 
-      const price = pricingTiers[seat.default_category] || pricingTiers['STANDARD'] || 50;
+      const price = Number(pricingTiers[seat.default_category] || 50);
       totalAmount += price;
       confirmedSeats.push({ ...seat, price });
     }
 
-    // Insert into bookings
+    const recipientEmail = (deliveryEmail && deliveryEmail.trim()) || user.email;
+
+    // Atomic transaction: Insert booking
     await db.query(`
-      INSERT INTO bookings (id, booking_reference, user_id, show_id, total_amount, status, qr_code_data)
-      VALUES (?, ?, ?, ?, ?, 'CONFIRMED', '')
-    `, [bookingId, bookingReference, user.id, showId, totalAmount]);
+      INSERT INTO bookings (id, user_id, show_id, booking_reference, total_amount, status, payment_method)
+      VALUES (?, ?, ?, ?, ?, 'CONFIRMED', ?)
+    `, [bookingId, user.id, showId, bookingReference, totalAmount, paymentDetails?.method || 'CARD']);
 
     // Insert booking_seats & lock show_seats to BOOKED
     for (const seat of confirmedSeats) {
@@ -110,7 +112,7 @@ export async function confirmBooking(req, res) {
       eventTitle: show.event_title,
       venueName: show.venue_name,
       customerName: user.name,
-      customerEmail: user.email,
+      customerEmail: recipientEmail,
       seats: confirmedSeats.map(s => `${s.row_label}-${s.seat_number} (${s.default_category})`),
       totalAmount,
       showTime: show.start_time
@@ -124,7 +126,7 @@ export async function confirmBooking(req, res) {
     });
 
     sendBookingConfirmation({
-      user,
+      user: { ...user, email: recipientEmail },
       booking: { id: bookingId, booking_reference: bookingReference, total_amount: totalAmount },
       show,
       event: { title: show.event_title, category: show.event_category },

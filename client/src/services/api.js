@@ -56,9 +56,8 @@ export const api = {
   holdSeats: (showId, showSeatIds) => request(`/shows/${showId}/hold`, { method: 'POST', body: JSON.stringify({ showSeatIds }) }),
   releaseHold: (showId, showSeatIds) => request(`/shows/${showId}/release-hold`, { method: 'POST', body: JSON.stringify({ showSeatIds }) }),
 
-  // Bookings
-  confirmBooking: (showId, showSeatIds, paymentDetails) =>
-    request('/bookings/confirm', { method: 'POST', body: JSON.stringify({ showId, showSeatIds, paymentDetails }) }),
+  confirmBooking: (showId, showSeatIds, paymentDetails, deliveryEmail) =>
+    request('/bookings/confirm', { method: 'POST', body: JSON.stringify({ showId, showSeatIds, paymentDetails, deliveryEmail }) }),
   getMyBookings: () => request('/bookings/my'),
   getBookingDetails: (idOrRef) => request(`/bookings/${idOrRef}`),
   cancelBooking: (id) => request(`/bookings/${id}/cancel`, { method: 'POST' }),

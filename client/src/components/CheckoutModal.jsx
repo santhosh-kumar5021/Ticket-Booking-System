@@ -12,7 +12,8 @@ import {
   MapPin,
   Clock,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  Mail
 } from 'lucide-react';
 
 export function CheckoutModal({
@@ -22,6 +23,7 @@ export function CheckoutModal({
   onBookingSuccess
 }) {
   const { user } = useAuth();
+  const [deliveryEmail, setDeliveryEmail] = useState(user?.email || 'uppalavenkey01@gmail.com');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('card');
@@ -49,10 +51,15 @@ export function CheckoutModal({
 
     try {
       const showSeatIds = heldSeats.map(s => s.id);
-      const res = await api.confirmBooking(show.id, showSeatIds, {
-        method: paymentMethod,
-        cardLast4: '4242'
-      });
+      const res = await api.confirmBooking(
+        show.id,
+        showSeatIds,
+        {
+          method: paymentMethod,
+          cardLast4: '4242'
+        },
+        deliveryEmail
+      );
 
       confetti({
         particleCount: 120,
@@ -170,6 +177,23 @@ export function CheckoutModal({
             </div>
           </div>
 
+          {/* Recipient Email Input */}
+          <div className="form-group" style={{ marginBottom: 18 }}>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+              <Mail size={14} color="#818cf8" />
+              <span>Send QR Pass & Ticket Confirmation To:</span>
+            </label>
+            <input
+              type="email"
+              required
+              className="form-input"
+              value={deliveryEmail}
+              onChange={e => setDeliveryEmail(e.target.value)}
+              placeholder="e.g. your-email@gmail.com"
+              style={{ fontSize: 14, fontWeight: 600 }}
+            />
+          </div>
+
           {/* Pricing Summary */}
           <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 16, marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
@@ -192,12 +216,6 @@ export function CheckoutModal({
               <span>Total Amount:</span>
               <span style={{ color: '#10b981' }}>${finalTotal.toFixed(2)}</span>
             </div>
-          </div>
-
-          {/* Customer & Email Confirmation Notice */}
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <ShieldCheck size={16} color="#10b981" />
-            <span>Digital QR-Code Ticket will be dispatched to <strong style={{ color: '#ffffff' }}>{user?.email}</strong></span>
           </div>
 
           {/* Submit */}
