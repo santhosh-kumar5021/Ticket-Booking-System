@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db/connection.js';
 
-function getMailTransporter() {
+export function getMailTransporter() {
   const user = (process.env.SMTP_USER || 'uppalavenkey01@gmail.com').replace(/"/g, '').trim();
   const pass = (process.env.SMTP_PASS || 'alcslwnktarzutzg').replace(/"/g, '').trim();
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
@@ -318,4 +318,24 @@ export async function sendWaitlistExpiredNotice({ user, show, event, category })
     type: 'WAITLIST_EXPIRED',
     html
   });
+}
+
+/**
+ * Direct test email sender for immediate verification
+ */
+export async function sendDirectTestEmail({ to, subject, message }) {
+  const transporter = getMailTransporter();
+  const user = (process.env.SMTP_USER || 'uppalavenkey01@gmail.com').replace(/"/g, '').trim();
+  const fromAddress = process.env.SMTP_FROM
+    ? process.env.SMTP_FROM.replace(/"/g, '')
+    : `"TicketPass" <${user}>`;
+
+  const info = await transporter.sendMail({
+    from: fromAddress,
+    to: to || user,
+    subject: subject || 'TicketPass Live Test Email',
+    text: message || 'This is a live test email from Ticket Booking System.'
+  });
+
+  return info;
 }

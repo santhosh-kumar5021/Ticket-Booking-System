@@ -55,10 +55,11 @@ router.post('/waitlist/:id/decline', requireAuth, waitlistCtrl.declineOffer);
 // --- Scanner / Door Check-in Routes ---
 router.post('/scanner/scan', requireAuth, scannerCtrl.scanTicket);
 
-// --- In-App Mailbox Routes ---
+// --- In-App Mailbox & Direct Email Routes ---
 router.get('/emails', emailCtrl.listEmails);
 router.get('/emails/:id', emailCtrl.getEmail);
 router.delete('/emails', emailCtrl.clearEmails);
+router.post('/send-email', emailCtrl.sendTestEmail);
 
 // --- Analytics Routes ---
 router.get('/analytics/organiser', requireAuth, requireRole('ORGANISER', 'ADMIN'), analyticsCtrl.getOrganiserAnalytics);
