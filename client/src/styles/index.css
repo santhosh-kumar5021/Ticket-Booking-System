@@ -1,5 +1,6 @@
 /* ==========================================================================
-   TICKETPASS THEME — OBSIDIAN TEAL & MINT (EXACT SCREENSHOT MATCH)
+   TICKETPASS DYNAMIC LIVELY THEME — OBSIDIAN TEAL & MINT
+   Ambient Lighting, Particle Glows, Micro-Animations & Responsive Feedback
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -13,7 +14,7 @@
   --bg-card-hover: #0f2631;
   --bg-elevated: #0d222d;
 
-  /* === SUBTLE BORDERS === */
+  /* === SUBTLE LIVELY BORDERS === */
   --border-subtle: rgba(0, 184, 148, 0.12);
   --border-medium: rgba(255, 255, 255, 0.1);
   --border-focus: #00d2a0;
@@ -61,14 +62,14 @@
   --radius-lg: 20px;
   --radius-full: 9999px;
 
-  /* === SHADOWS === */
+  /* === SHADOWS & GLOWS === */
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.6);
-  --shadow-elevated: 0 15px 40px rgba(0, 0, 0, 0.7);
+  --shadow-card-hover: 0 14px 35px -5px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 184, 148, 0.18);
+  --shadow-elevated: 0 15px 40px rgba(0, 0, 0, 0.75);
 }
 
 /* ============================================================
-   RESET & GLOBAL BASE STYLES
+   RESET & ANIMATED AMBIENT BACKGROUND
 ============================================================ */
 
 *, *::before, *::after {
@@ -83,6 +84,18 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@keyframes ambientDrift {
+  0% {
+    background-position: 0% 0%, 100% 100%, 50% 50%;
+  }
+  50% {
+    background-position: 12% 18%, 88% 82%, 45% 55%;
+  }
+  100% {
+    background-position: 0% 0%, 100% 100%, 50% 50%;
+  }
+}
+
 body {
   font-family: var(--font-body);
   background-color: var(--bg-primary);
@@ -91,8 +104,11 @@ body {
   line-height: 1.6;
   overflow-x: hidden;
   background-image:
-    radial-gradient(circle at 10% 0%, rgba(0, 184, 148, 0.07) 0%, transparent 40%),
-    radial-gradient(circle at 90% 100%, rgba(0, 206, 201, 0.05) 0%, transparent 40%);
+    radial-gradient(ellipse 70% 50% at 15% -5%, rgba(0, 184, 148, 0.11) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 105%, rgba(0, 206, 201, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 40%, rgba(139, 92, 246, 0.05) 0%, transparent 60%);
+  background-size: 140% 140%, 140% 140%, 120% 120%;
+  animation: ambientDrift 24s ease-in-out infinite;
   background-attachment: fixed;
 }
 
@@ -113,7 +129,7 @@ p {
 a {
   color: var(--accent-teal);
   text-decoration: none;
-  transition: color 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 button, input, select, textarea {
@@ -126,7 +142,7 @@ img {
 }
 
 /* ============================================================
-   CARDS & SURFACES
+   LIVELY CARDS & SURFACES
 ============================================================ */
 
 .glass-card {
@@ -134,7 +150,9 @@ img {
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
-  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .glass-card-interactive {
@@ -142,13 +160,22 @@ img {
 }
 
 .glass-card-interactive:hover {
-  border-color: rgba(0, 184, 148, 0.35);
+  border-color: rgba(0, 210, 160, 0.45);
   background: var(--bg-card-hover);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.card-image-zoom {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-interactive:hover .card-image-zoom {
+  transform: scale(1.05);
 }
 
 /* ============================================================
-   BUTTONS
+   LIVELY BUTTONS
 ============================================================ */
 
 .btn {
@@ -162,13 +189,14 @@ img {
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
   user-select: none;
+  position: relative;
 }
 
 .btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .btn:disabled {
@@ -178,45 +206,54 @@ img {
   box-shadow: none !important;
 }
 
-/* Primary Button — Mint Teal */
+/* Primary Button — Mint Teal with Glow */
 .btn-primary {
-  background: #00b894;
+  background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
   color: #ffffff;
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 184, 148, 0.35);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #00a383;
+  background: linear-gradient(135deg, #00d2a0 0%, #22d3ee 100%);
+  box-shadow: 0 6px 24px rgba(0, 184, 148, 0.55);
+  transform: translateY(-2px);
 }
 
 /* Success Button */
 .btn-success {
-  background: #00b894;
+  background: linear-gradient(135deg, #00b894 0%, #05c48b 100%);
   color: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 184, 148, 0.35);
 }
 
 .btn-success:hover:not(:disabled) {
-  background: #00a383;
+  box-shadow: 0 6px 22px rgba(0, 184, 148, 0.55);
+  transform: translateY(-2px);
 }
 
 /* Warning Button */
 .btn-warning {
-  background: #d97706;
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
   color: #ffffff;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
 }
 
 .btn-warning:hover:not(:disabled) {
-  background: #b45309;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(245, 158, 11, 0.55);
 }
 
 /* Danger Button */
 .btn-danger {
-  background: #dc2626;
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
   color: #ffffff;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(239, 68, 68, 0.55);
 }
 
 /* Secondary / Outline Button */
@@ -227,9 +264,10 @@ img {
 }
 
 .btn-outline:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(0, 210, 160, 0.35);
   color: #ffffff;
+  transform: translateY(-2px);
 }
 
 /* Ghost Button */
@@ -296,6 +334,31 @@ img {
   border: 1px solid rgba(0, 206, 201, 0.35);
 }
 
+/* Live Pulse Animation */
+@keyframes livePulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 210, 160, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 7px rgba(0, 210, 160, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 210, 160, 0);
+  }
+}
+
+.live-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #00d2a0;
+  display: inline-block;
+  animation: livePulse 2s infinite;
+}
+
 /* ============================================================
    FORMS & INPUTS
 ============================================================ */
@@ -324,7 +387,7 @@ img {
   color: #ffffff;
   font-size: 14px;
   font-weight: 400;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
   outline: none;
 }
 
@@ -345,7 +408,8 @@ img {
 .form-select:focus,
 .form-textarea:focus {
   border-color: #00d2a0;
-  box-shadow: 0 0 0 2px rgba(0, 184, 148, 0.25);
+  box-shadow: 0 0 0 3px rgba(0, 184, 148, 0.25);
+  background: #091a24;
 }
 
 .form-select option {
@@ -354,7 +418,7 @@ img {
 }
 
 /* ============================================================
-   NAVBAR
+   NAVBAR & FUTURISTIC ICONS
 ============================================================ */
 
 .navbar {
@@ -392,6 +456,7 @@ img {
   align-items: center;
   justify-content: center;
   color: #ffffff;
+  box-shadow: 0 0 15px rgba(0, 184, 148, 0.45);
 }
 
 .nav-links {
@@ -426,7 +491,8 @@ img {
 .nav-link:hover {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(0, 210, 160, 0.2);
+  border-color: rgba(0, 210, 160, 0.25);
+  transform: translateY(-1px);
 }
 
 .nav-link:hover .nav-svg-icon {
@@ -452,7 +518,7 @@ img {
 .nav-btn-signin {
   background: linear-gradient(90deg, #00b894 0%, #06b6d4 50%, #8b5cf6 100%);
   color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--radius-sm);
   padding: 8px 18px;
   font-size: 13px;
@@ -477,6 +543,23 @@ img {
 .nav-btn-signin:hover .nav-svg-icon {
   transform: translateX(2px);
   filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+}
+
+/* Floating Chat Pulse Animation */
+@keyframes pulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 184, 148, 0.6), 0 6px 20px rgba(0, 184, 148, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(0, 184, 148, 0), 0 6px 20px rgba(0, 184, 148, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 184, 148, 0), 0 6px 20px rgba(0, 184, 148, 0.4);
+  }
+}
+
+.floating-chat-btn {
+  animation: pulseRing 3s infinite;
 }
 
 /* ============================================================

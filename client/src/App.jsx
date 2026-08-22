@@ -157,6 +157,7 @@ function AppContent() {
 
       {/* Floating Chat Support Widget matching screenshot */}
       <button
+        className="floating-chat-btn"
         style={{
           position: 'fixed',
           bottom: 24,
