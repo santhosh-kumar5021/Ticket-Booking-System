@@ -70,58 +70,80 @@ export function EventCatalog({ onSelectEvent, onSelectShow }) {
 
   return (
     <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 24px 80px 24px' }}>
-      {/* Hero Banner with Rich Glassmorphism */}
+      {/* Hero Banner with Obsidian Teal Design */}
       <div
         className="glass-card"
         style={{
           padding: '48px 36px',
-          marginBottom: 40,
-          background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%)',
-          border: '1px solid rgba(99, 102, 241, 0.25)',
-          borderRadius: 24,
+          marginBottom: 36,
+          background: '#0a1c24',
+          border: '1px solid rgba(0, 184, 148, 0.18)',
+          borderRadius: 20,
           position: 'relative',
           overflow: 'hidden'
         }}
       >
+        {/* Background concentric geometric circles */}
+        <div style={{
+          position: 'absolute',
+          right: -80,
+          top: -80,
+          width: 500,
+          height: 500,
+          borderRadius: '50%',
+          border: '1px solid rgba(0, 184, 148, 0.08)',
+          pointerEvents: 'none'
+        }} />
+        <div style={{
+          position: 'absolute',
+          right: -10,
+          top: -10,
+          width: 360,
+          height: 360,
+          borderRadius: '50%',
+          border: '1px solid rgba(0, 184, 148, 0.06)',
+          pointerEvents: 'none'
+        }} />
+
         <div style={{ maxWidth: 760, position: 'relative', zIndex: 2 }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: 8,
             padding: '6px 14px',
-            background: 'rgba(99, 102, 241, 0.2)',
+            background: '#082228',
             borderRadius: 20,
-            border: '1px solid rgba(99, 102, 241, 0.4)',
+            border: '1px solid rgba(0, 184, 148, 0.4)',
             fontSize: 12,
             fontWeight: 800,
-            color: '#a5b4fc',
+            color: '#00d2a0',
             textTransform: 'uppercase',
-            letterSpacing: 1,
+            letterSpacing: 0.8,
             marginBottom: 16
           }}>
-            <Sparkles size={14} color="#fbbf24" /> Event-Agnostic High-Concurrency Booking Engine
+            <Sparkles size={14} color="#00d2a0" /> Event-Agnostic High-Concurrency Booking Engine
           </div>
 
-          <h1 style={{ fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: 900, lineHeight: 1.15, marginBottom: 16 }}>
-            Book Real-Time Tickets for <span style={{ background: 'linear-gradient(135deg, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Movies, Concerts, Sports & Shows</span>
+          <h1 style={{ fontSize: 'clamp(28px, 4.5vw, 42px)', fontWeight: 800, lineHeight: 1.18, marginBottom: 16, color: '#ffffff' }}>
+            Book Real-Time Tickets for <span style={{ color: '#00d2a0' }}>Movies, Concerts, Sports & Shows</span>
           </h1>
 
-          <p style={{ fontSize: 16, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 28 }}>
+          <p style={{ fontSize: 15, color: '#94a3b8', lineHeight: 1.6, marginBottom: 28 }}>
             Interactive SVG seat maps with 10-minute hold TTLs, atomic concurrency guarantees, automated FIFO waitlist cascade on cancellations, and instant cryptographic QR tickets.
           </p>
 
           {/* Key Metric Badges */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, fontSize: 13, color: '#cbd5e1' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, fontSize: 13, color: '#cbd5e1' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Zap size={16} color="#10b981" />
+              <ShieldCheck size={16} color="#00d2a0" />
               <span>Hard Concurrency Locking</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Clock size={16} color="#f59e0b" />
+              <Clock size={16} color="#fbbf24" />
               <span>Configurable Hold TTL Auto-Release</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Users size={16} color="#818cf8" />
+              <Users size={16} color="#00cec9" />
               <span>Automated Waitlist Cascade</span>
             </div>
           </div>

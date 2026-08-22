@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { Navbar } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
+import { MessageSquare } from 'lucide-react';
 
 import { EventCatalog } from './pages/EventCatalog';
 import { ShowBookingPage } from './pages/ShowBookingPage';
@@ -153,6 +154,33 @@ function AppContent() {
           onSuccess={() => setShowAuthModal(false)}
         />
       )}
+
+      {/* Floating Chat Support Widget matching screenshot */}
+      <button
+        style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          width: 48,
+          height: 48,
+          borderRadius: '50%',
+          backgroundColor: '#00b894',
+          color: '#ffffff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: 'none',
+          boxShadow: '0 6px 20px rgba(0, 184, 148, 0.4)',
+          cursor: 'pointer',
+          zIndex: 90,
+          transition: 'transform 0.2s ease, background-color 0.2s ease'
+        }}
+        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
+        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+        title="Live Support & Feedback"
+      >
+        <MessageSquare size={20} />
+      </button>
     </div>
   );
 }

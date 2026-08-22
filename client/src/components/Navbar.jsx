@@ -104,7 +104,7 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
             <div className="nav-brand-icon">
               <Ticket size={20} color="#ffffff" />
             </div>
-            <span>Ticket<span style={{ color: '#818cf8' }}>Pass</span></span>
+            <span>TicketPass</span>
           </div>
 
           {/* Navigation Links — Strictly Role-Based */}
