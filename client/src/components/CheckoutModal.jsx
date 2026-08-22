@@ -54,7 +54,6 @@ export function CheckoutModal({
         cardLast4: '4242'
       });
 
-      // Trigger victory confetti
       confetti({
         particleCount: 120,
         spread: 70,
@@ -71,7 +70,17 @@ export function CheckoutModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 540 }}>
+      <div
+        className="modal-content"
+        onClick={e => e.stopPropagation()}
+        style={{
+          maxWidth: 540,
+          background: '#111827',
+          border: '1px solid rgba(99, 102, 241, 0.3)',
+          boxShadow: '0 25px 50px rgba(0,0,0,0.85), 0 0 30px rgba(99, 102, 241, 0.2)',
+          borderRadius: 16
+        }}
+      >
         {/* Header */}
         <div style={{
           padding: '20px 24px',
@@ -81,16 +90,16 @@ export function CheckoutModal({
           alignItems: 'center'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <CreditCard size={18} color="#818cf8" />
             </div>
             <div>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>Confirm Ticket Purchase</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#ffffff' }}>Confirm Ticket Purchase</h3>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Instant QR Pass Issued to Email</div>
             </div>
           </div>
           <button onClick={onClose} className="btn btn-ghost" style={{ padding: 6 }}>
-            <X size={18} />
+            <X size={18} color="var(--text-secondary)" />
           </button>
         </div>
 
@@ -115,8 +124,8 @@ export function CheckoutModal({
           )}
 
           {/* Event Summary Card */}
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 16, marginBottom: 18 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
+          <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 16, marginBottom: 18 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#ffffff', marginBottom: 4 }}>
               {show.event_title}
             </div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -144,7 +153,7 @@ export function CheckoutModal({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: 12,
-                    background: 'var(--bg-primary)',
+                    background: 'rgba(255, 255, 255, 0.03)',
                     border: '1px solid var(--border-subtle)',
                     padding: '8px 12px',
                     borderRadius: 8,
@@ -152,8 +161,8 @@ export function CheckoutModal({
                   }}
                 >
                   <div>
-                    <strong style={{ color: 'var(--text-primary)' }}>Row {s.row}, Seat {s.number}</strong>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 6 }}>({s.category})</span>
+                    <strong style={{ color: '#ffffff' }}>Row {s.row}, Seat {s.number}</strong>
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>({s.category})</span>
                   </div>
                   <strong style={{ color: '#10b981' }}>${s.price}</strong>
                 </div>
@@ -162,21 +171,21 @@ export function CheckoutModal({
           </div>
 
           {/* Pricing Summary */}
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 16, marginBottom: 20 }}>
+          <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 16, marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
               <span>Subtotal ({heldSeats.length} tickets):</span>
-              <span>${totalPrice.toFixed(2)}</span>
+              <span style={{ color: '#ffffff' }}>${totalPrice.toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
               <span>Service & Facility Fee:</span>
-              <span>${serviceFee.toFixed(2)}</span>
+              <span style={{ color: '#ffffff' }}>${serviceFee.toFixed(2)}</span>
             </div>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               fontSize: 18,
               fontWeight: 800,
-              color: 'var(--text-primary)',
+              color: '#ffffff',
               borderTop: '1px dashed var(--border-subtle)',
               paddingTop: 12
             }}>
@@ -186,9 +195,9 @@ export function CheckoutModal({
           </div>
 
           {/* Customer & Email Confirmation Notice */}
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
             <ShieldCheck size={16} color="#10b981" />
-            <span>Digital QR-Code Ticket will be dispatched to <strong>{user?.email}</strong></span>
+            <span>Digital QR-Code Ticket will be dispatched to <strong style={{ color: '#ffffff' }}>{user?.email}</strong></span>
           </div>
 
           {/* Submit */}

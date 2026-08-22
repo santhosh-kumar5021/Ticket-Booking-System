@@ -312,6 +312,7 @@ export function ShowBookingPage({ showId, onBack, onOpenAuthModal }) {
         <WaitlistModal
           show={show}
           onClose={() => setShowWaitlistModal(false)}
+          onOpenAuthModal={onOpenAuthModal}
           onSuccess={() => {
             setShowWaitlistModal(false);
           }}

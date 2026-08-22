@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { UserCheck, LogIn, UserPlus, X, AlertCircle, Sparkles } from 'lucide-react';
+import { UserCheck, LogIn, UserPlus, X, AlertCircle, Sparkles, Shield, User } from 'lucide-react';
 
 export function AuthModal({ onClose, onSuccess }) {
   const { login, register, switchUser, demoUsers } = useAuth();
@@ -55,7 +55,17 @@ export function AuthModal({ onClose, onSuccess }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
+      <div
+        className="modal-content"
+        onClick={e => e.stopPropagation()}
+        style={{
+          maxWidth: 480,
+          background: '#111827',
+          border: '1px solid rgba(99, 102, 241, 0.3)',
+          boxShadow: '0 25px 50px rgba(0,0,0,0.85), 0 0 30px rgba(99, 102, 241, 0.2)',
+          borderRadius: 16
+        }}
+      >
         {/* Header */}
         <div style={{
           padding: '20px 24px',
@@ -78,12 +88,57 @@ export function AuthModal({ onClose, onSuccess }) {
             </div>
           </div>
           <button onClick={onClose} className="btn btn-ghost" style={{ padding: 6 }}>
-            <X size={18} />
+            <X size={18} color="var(--text-secondary)" />
           </button>
         </div>
 
         {/* Content */}
         <div style={{ padding: 24 }}>
+          {/* Quick 1-Click Demo User Switcher */}
+          {!isRegister && (
+            <div style={{
+              background: 'rgba(99, 102, 241, 0.1)',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              borderRadius: 12,
+              padding: 14,
+              marginBottom: 20
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#a5b4fc', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={14} color="#fbbf24" />
+                <span>Quick 1-Click Demo Login:</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('usr-cust-1')}
+                  className="btn btn-outline"
+                  style={{ padding: '8px 6px', fontSize: 11, fontWeight: 700, borderColor: 'rgba(16,185,129,0.3)', color: '#34d399', textAlign: 'center', flexDirection: 'column' }}
+                >
+                  <span>🎟️ Customer</span>
+                  <span style={{ fontSize: 9, opacity: 0.7 }}>Alex Johnson</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('usr-org-1')}
+                  className="btn btn-outline"
+                  style={{ padding: '8px 6px', fontSize: 11, fontWeight: 700, borderColor: 'rgba(99,102,241,0.4)', color: '#a5b4fc', textAlign: 'center', flexDirection: 'column' }}
+                >
+                  <span>🎭 Organiser</span>
+                  <span style={{ fontSize: 9, opacity: 0.7 }}>Starlight Cinema</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('usr-admin-1')}
+                  className="btn btn-outline"
+                  style={{ padding: '8px 6px', fontSize: 11, fontWeight: 700, borderColor: 'rgba(251,191,36,0.4)', color: '#fbbf24', textAlign: 'center', flexDirection: 'column' }}
+                >
+                  <span>👑 Admin</span>
+                  <span style={{ fontSize: 9, opacity: 0.7 }}>System Admin</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div style={{
               background: 'rgba(239, 68, 68, 0.15)',
@@ -101,7 +156,6 @@ export function AuthModal({ onClose, onSuccess }) {
               <span>{error}</span>
             </div>
           )}
-
 
           <form onSubmit={handleSubmit}>
             {isRegister && (

@@ -330,7 +330,17 @@ export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
       {/* Create Event Modal */}
       {showCreateEventModal && (
         <div className="modal-overlay" onClick={() => setShowCreateEventModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 540 }}>
+          <div
+            className="modal-content"
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: 540,
+              background: '#111827',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.85), 0 0 30px rgba(99, 102, 241, 0.2)',
+              borderRadius: 16
+            }}
+          >
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>Create New Event</h3>
               <button onClick={() => setShowCreateEventModal(false)} className="btn btn-ghost" style={{ padding: 6 }}>✕</button>
@@ -418,7 +428,17 @@ export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
       {/* Schedule Show Modal */}
       {showScheduleShowModal && (
         <div className="modal-overlay" onClick={() => setShowScheduleShowModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 540 }}>
+          <div
+            className="modal-content"
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: 540,
+              background: '#111827',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.85), 0 0 30px rgba(99, 102, 241, 0.2)',
+              borderRadius: 16
+            }}
+          >
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>Schedule Show at Venue</h3>
               <button onClick={() => setShowScheduleShowModal(false)} className="btn btn-ghost" style={{ padding: 6 }}>✕</button>
