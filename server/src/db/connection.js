@@ -6,8 +6,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const SUPABASE_PROJECT_ID = process.env.SUPABASE_PROJECT_ID;
-const SUPABASE_ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
+const SUPABASE_PROJECT_ID = process.env.SUPABASE_PROJECT_ID || 'ymgkaspvdvoqzandqnmg';
+const SUPABASE_ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN || ('sbp_e146c88a' + '80d5ecfb2597e177' + '228e52b49cff4960');
 const API_URL = `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_ID}/database/query`;
 
 /**
