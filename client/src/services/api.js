@@ -86,5 +86,8 @@ export const api = {
 
   // Analytics
   getOrganiserAnalytics: () => request('/analytics/organiser'),
-  getAdminAnalytics: () => request('/analytics/admin')
+  getAdminAnalytics: () => request('/analytics/admin'),
+
+  // Seed Data
+  seedSampleData: () => request('/seed', { method: 'POST' })
 };

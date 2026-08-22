@@ -11,6 +11,7 @@ import * as emailCtrl from '../controllers/emailController.js';
 import * as analyticsCtrl from '../controllers/analyticsController.js';
 import { addShowSubscriber, addUserSubscriber } from '../services/sseService.js';
 import { verifyToken } from '../utils/token.js';
+import { seedDatabase } from '../db/seed.js';
 
 const router = Router();
 
@@ -78,6 +79,16 @@ router.get('/sse/user', (req, res) => {
     return res.status(401).json({ error: 'Invalid token.' });
   }
   addUserSubscriber(decoded.id, res, req);
+});
+
+// --- Sample Data Seeding Endpoint ---
+router.post('/seed', async (req, res, next) => {
+  try {
+    await seedDatabase();
+    res.json({ success: true, message: 'Sample events, venues, and shows seeded successfully!' });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
