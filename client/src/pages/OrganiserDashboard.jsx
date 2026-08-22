@@ -23,6 +23,7 @@ export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
   const [venues, setVenues] = useState([]);
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSeedingData, setIsSeedingData] = useState(false);
 
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
   const [showScheduleShowModal, setShowScheduleShowModal] = useState(false);
@@ -62,19 +63,34 @@ export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
         api.getOrganiserEvents()
       ]);
       setAnalytics(analyticsRes);
-      setVenues(venuesRes.venues || []);
-      setEvents(eventsRes.events || []);
+      const venueList = venuesRes.venues || [];
+      const eventList = eventsRes.events || [];
+      setVenues(venueList);
+      setEvents(eventList);
 
-      if (eventsRes.events?.length > 0) {
-        setShowForm(prev => ({ ...prev, event_id: eventsRes.events[0].id }));
+      if (eventList.length > 0) {
+        setShowForm(prev => ({ ...prev, event_id: eventList[0].id }));
       }
-      if (venuesRes.venues?.length > 0) {
-        setShowForm(prev => ({ ...prev, venue_id: venuesRes.venues[0].id }));
+      if (venueList.length > 0) {
+        setShowForm(prev => ({ ...prev, venue_id: venueList[0].id }));
       }
     } catch (err) {
       console.error('Failed to load organiser dashboard:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSeedData = async () => {
+    setIsSeedingData(true);
+    try {
+      await api.seedSampleData();
+      showToast('✅ Demo data seeded! 3 venues, 6 events, 6 shows loaded.', 'success');
+      await fetchDashboardData();
+    } catch (err) {
+      showToast('Failed to seed data: ' + (err.message || 'Unknown error'), 'error');
+    } finally {
+      setIsSeedingData(false);
     }
   };
 
@@ -138,6 +154,17 @@ export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
         </div>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={handleSeedData}
+            disabled={isSeedingData}
+            className="btn btn-outline"
+            style={{ padding: '10px 18px', borderColor: 'rgba(251,191,36,0.4)', color: '#fbbf24' }}
+            title="Load demo events, venues & shows into the database"
+          >
+            <Sparkles size={16} />
+            <span>{isSeedingData ? 'Seeding...' : 'Load Demo Data'}</span>
+          </button>
+
           <button onClick={() => setShowCreateEventModal(true)} className="btn btn-outline" style={{ padding: '10px 18px' }}>
             <PlusCircle size={16} />
             <span>Create Event</span>
@@ -150,7 +177,7 @@ export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
 
           <button onClick={onOpenScanner} className="btn btn-success" style={{ padding: '10px 18px' }}>
             <QrCode size={16} />
-            <span>Launch Gate Scanner</span>
+            <span>Gate Scanner</span>
           </button>
         </div>
       </div>
@@ -412,15 +439,30 @@ export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
 
               <div className="form-group">
                 <label className="form-label">Select Venue (Seat Layout)</label>
-                <select
-                  className="form-select"
-                  value={showForm.venue_id}
-                  onChange={e => setShowForm({ ...showForm, venue_id: e.target.value })}
-                >
-                  {venues.map(v => (
-                    <option key={v.id} value={v.id}>{v.name} — {v.city} ({v.capacity} seats)</option>
-                  ))}
-                </select>
+                {venues.length === 0 ? (
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'rgba(245,158,11,0.1)',
+                    border: '1px solid rgba(245,158,11,0.3)',
+                    borderRadius: 8,
+                    color: '#fbbf24',
+                    fontSize: 13
+                  }}>
+                    ⚠️ No venues found. Click <strong>"Load Demo Data"</strong> first to populate venues, or ask an Admin to create a venue.
+                  </div>
+                ) : (
+                  <select
+                    className="form-select"
+                    value={showForm.venue_id}
+                    onChange={e => setShowForm({ ...showForm, venue_id: e.target.value })}
+                    required
+                  >
+                    <option value="" disabled>-- Select a Venue --</option>
+                    {venues.map(v => (
+                      <option key={v.id} value={v.id}>{v.name} — {v.city} ({v.capacity} seats)</option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
