@@ -5,11 +5,11 @@ import { initDatabase } from './init.js';
 import { generateSignedQRCode } from '../utils/qr.js';
 
 export async function seedDatabase() {
-  console.log('--- Starting Database Seeding ---');
-  initDatabase();
+  console.log('--- Starting Database Seeding on Supabase ---');
+  await initDatabase();
 
   // Clear existing records to ensure clean reproducible state
-  db.exec(`
+  await db.query(`
     DELETE FROM emails_log;
     DELETE FROM waitlist_entries;
     DELETE FROM booking_seats;
@@ -38,26 +38,13 @@ export async function seedDatabase() {
     { id: 'usr-cust-4', name: 'Elena Rostova', email: 'elena.rostova@example.com', password_hash: passwordHash, role: 'CUSTOMER' }
   ];
 
-  const insertUser = db.prepare(`
-    INSERT INTO users (id, name, email, password_hash, role)
-    VALUES (?, ?, ?, ?, ?)
-  `);
-
   for (const u of users) {
-    insertUser.run(u.id, u.name, u.email, u.password_hash, u.role);
+    await db.query(`
+      INSERT INTO users (id, name, email, password_hash, role)
+      VALUES ($1, $2, $3, $4, $5)
+    `, [u.id, u.name, u.email, u.password_hash, u.role]);
   }
   console.log(`Seeded ${users.length} users.`);
-
-  // 2. Helper to generate Venue + Layout + Seats
-  const insertVenue = db.prepare(`
-    INSERT INTO venues (id, name, address, city, capacity, layout_config)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
-
-  const insertSeat = db.prepare(`
-    INSERT INTO seats (id, venue_id, row_label, seat_number, section, default_category, is_accessible, x_pos, y_pos)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
 
   // 2. Helper to generate Venue + Layout + Seats
   const standardVenueConfig = {
@@ -81,10 +68,15 @@ export async function seedDatabase() {
   ];
 
   for (const v of venuesToSeed) {
-    insertVenue.run(v.id, v.name, v.address, v.city, 120, JSON.stringify(standardVenueConfig));
-    
+    await db.query(`
+      INSERT INTO venues (id, name, address, city, capacity, layout_config)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [v.id, v.name, v.address, v.city, 120, JSON.stringify(standardVenueConfig)]);
+
     const allRows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-    allRows.forEach((row, rIdx) => {
+    const seatRowsSql = [];
+    for (let rIdx = 0; rIdx < allRows.length; rIdx++) {
+      const row = allRows[rIdx];
       let cat = 'EXECUTIVE';
       let section = 'Executive';
       if (['A', 'B', 'C', 'D'].includes(row)) {
@@ -97,25 +89,24 @@ export async function seedDatabase() {
 
       for (let col = 1; col <= 12; col++) {
         const seatId = `seat-${v.id}-${row}-${col}`;
-        insertSeat.run(seatId, v.id, row, col, section, cat, 0, col * 40, rIdx * 35);
+        seatRowsSql.push(`('${seatId}', '${v.id}', '${row}', ${col}, '${section}', '${cat}', 0, ${col * 40}, ${rIdx * 35})`);
       }
-    });
+    }
+    await db.query(`
+      INSERT INTO seats (id, venue_id, row_label, seat_number, section, default_category, is_accessible, x_pos, y_pos)
+      VALUES ${seatRowsSql.join(', ')}
+    `);
   }
 
   console.log('Seeded 3 Venues and comprehensive seat layouts.');
 
   // 3. Seed Events
-  const insertEvent = db.prepare(`
-    INSERT INTO events (id, organiser_id, title, description, category, image_url, banner_url, duration_mins, age_restriction, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
   const events = [
     {
       id: 'evt-interstellar',
       organiser_id: 'usr-org-1',
       title: 'Interstellar: 10th Anniversary IMAX 70mm',
-      description: 'Experience Christopher Nolan’s breathtaking sci-fi masterpiece remastered in IMAX 70mm with ground-shaking 12-channel surround sound. Mankind was born on Earth, it was never meant to die here.',
+      description: 'Experience Christopher Nolan’s breathtaking sci-fi masterpiece remastered in IMAX 70mm with ground-shaking 12-channel surround sound.',
       category: 'MOVIE',
       image_url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80',
       banner_url: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1600&auto=format&fit=crop&q=80',
@@ -127,7 +118,7 @@ export async function seedDatabase() {
       id: 'evt-coldplay',
       organiser_id: 'usr-org-2',
       title: 'Coldplay: Music of the Spheres World Tour',
-      description: 'The monumental global stadium tour featuring sensational light displays, kinetic dance floors, and anthems including Yellow, Viva La Vida, Fix You, and higher power.',
+      description: 'The monumental global stadium tour featuring sensational light displays, kinetic dance floors, and anthems including Yellow, Viva La Vida, Fix You.',
       category: 'CONCERT',
       image_url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop&q=80',
       banner_url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1600&auto=format&fit=crop&q=80',
@@ -139,7 +130,7 @@ export async function seedDatabase() {
       id: 'evt-hamilton',
       organiser_id: 'usr-org-1',
       title: 'Hamilton: The Broadway Musical',
-      description: 'Lin-Manuel Miranda’s Pulitzer Prize-winning revolutionary musical telling the story of Alexander Hamilton through hip-hop, jazz, and R&B. An unforgettable theatrical phenomenon.',
+      description: 'Lin-Manuel Miranda’s Pulitzer Prize-winning revolutionary musical telling the story of Alexander Hamilton through hip-hop, jazz, and R&B.',
       category: 'THEATRE',
       image_url: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&auto=format&fit=crop&q=80',
       banner_url: 'https://images.unsplash.com/photo-1469488865564-c2de10f69f96?w=1600&auto=format&fit=crop&q=80',
@@ -151,7 +142,7 @@ export async function seedDatabase() {
       id: 'evt-ucl-final',
       organiser_id: 'usr-org-2',
       title: 'UEFA Champions League Semifinal: Madrid vs Bayern',
-      description: 'European football at its highest pinnacle. 90 minutes of sheer drama, world-class tactics, and electric atmosphere under the stadium floodlights.',
+      description: 'European football at its highest pinnacle. 90 minutes of sheer drama, world-class tactics, and electric atmosphere under stadium floodlights.',
       category: 'SPORTS',
       image_url: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&auto=format&fit=crop&q=80',
       banner_url: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1600&auto=format&fit=crop&q=80',
@@ -163,7 +154,7 @@ export async function seedDatabase() {
       id: 'evt-trevor-noah',
       organiser_id: 'usr-org-2',
       title: 'Trevor Noah: "Off The Record" Live Comedy',
-      description: 'Emmy-winning comedian and former Daily Show host Trevor Noah returns with an all-new stand-up hour exploring international culture, politics, and modern absurdities.',
+      description: 'Emmy-winning comedian Trevor Noah returns with an all-new stand-up hour exploring international culture, politics, and modern absurdities.',
       category: 'COMEDY',
       image_url: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?w=800&auto=format&fit=crop&q=80',
       banner_url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1600&auto=format&fit=crop&q=80',
@@ -186,16 +177,14 @@ export async function seedDatabase() {
   ];
 
   for (const e of events) {
-    insertEvent.run(e.id, e.organiser_id, e.title, e.description, e.category, e.image_url, e.banner_url, e.duration_mins, e.age_restriction, e.status);
+    await db.query(`
+      INSERT INTO events (id, organiser_id, title, description, category, image_url, banner_url, duration_mins, age_restriction, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `, [e.id, e.organiser_id, e.title, e.description, e.category, e.image_url, e.banner_url, e.duration_mins, e.age_restriction, e.status]);
   }
   console.log(`Seeded ${events.length} Events.`);
 
   // 4. Seed Shows
-  const insertShow = db.prepare(`
-    INSERT INTO shows (id, event_id, venue_id, start_time, end_time, hold_ttl_minutes, pricing_tiers, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
   const now = new Date();
   const tomorrowNight = new Date(now.getTime() + 24 * 3600 * 1000);
   tomorrowNight.setHours(19, 30, 0, 0);
@@ -267,18 +256,16 @@ export async function seedDatabase() {
   ];
 
   for (const s of shows) {
-    insertShow.run(s.id, s.event_id, s.venue_id, s.start_time, s.end_time, s.hold_ttl_minutes, s.pricing_tiers, s.status);
+    await db.query(`
+      INSERT INTO shows (id, event_id, venue_id, start_time, end_time, hold_ttl_minutes, pricing_tiers, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [s.id, s.event_id, s.venue_id, s.start_time, s.end_time, s.hold_ttl_minutes, s.pricing_tiers, s.status]);
   }
   console.log(`Seeded ${shows.length} Shows.`);
 
-  // 5. Initialize Show Seats for all shows based on their venue's seat layout
-  const insertShowSeat = db.prepare(`
-    INSERT INTO show_seats (id, show_id, seat_id, status, held_by_user_id, hold_expires_at, booking_id, version)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
+  // 5. Populate show_seats using batch SQL
+  const allSeats = await db.all('SELECT * FROM seats');
   const venueSeatsMap = {};
-  const allSeats = db.prepare('SELECT * FROM seats').all();
   for (const seat of allSeats) {
     if (!venueSeatsMap[seat.venue_id]) venueSeatsMap[seat.venue_id] = [];
     venueSeatsMap[seat.venue_id].push(seat);
@@ -286,15 +273,20 @@ export async function seedDatabase() {
 
   for (const show of shows) {
     const seatsForVenue = venueSeatsMap[show.venue_id] || [];
-    for (const seat of seatsForVenue) {
-      const showSeatId = `ss-${show.id}-${seat.id}`;
-      insertShowSeat.run(showSeatId, show.id, seat.id, 'AVAILABLE', null, null, null, 0);
+    if (seatsForVenue.length > 0) {
+      const showSeatValues = seatsForVenue.map(seat => {
+        const showSeatId = `ss-${show.id}-${seat.id}`;
+        return `('${showSeatId}', '${show.id}', '${seat.id}', 'AVAILABLE', NULL, NULL, NULL, 0)`;
+      });
+      await db.query(`
+        INSERT INTO show_seats (id, show_id, seat_id, status, held_by_user_id, hold_expires_at, booking_id, version)
+        VALUES ${showSeatValues.join(', ')}
+      `);
     }
   }
   console.log('Populated all ShowSeats in AVAILABLE state.');
 
-  // 6. Create some sample Bookings, Holds, and a Sold-Out EXECUTIVE section with Active Waitlist
-  // For show-interstellar-1: Book 3 seats for Alex Johnson
+  // 6. Seed sample booking for Alex Johnson
   const booking1Ref = 'TKT-2026-INT901';
   const booking1Id = 'bk-int-alex-1';
   const qrData1 = await generateSignedQRCode({
@@ -307,44 +299,37 @@ export async function seedDatabase() {
     totalAmount: 70
   });
 
-  db.prepare(`
+  await db.query(`
     INSERT INTO bookings (id, booking_reference, user_id, show_id, total_amount, status, qr_code_data)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(booking1Id, booking1Ref, 'usr-cust-1', 'show-interstellar-1', 70, 'CONFIRMED', qrData1);
+    VALUES ($1, $2, $3, $4, $5, 'CONFIRMED', $6)
+  `, [booking1Id, booking1Ref, 'usr-cust-1', 'show-interstellar-1', 70, qrData1]);
 
-  // Update show_seats and insert booking_seats
   const bookedSeatIds = ['ss-show-interstellar-1-seat-ven-cineplex-imax-G-5', 'ss-show-interstellar-1-seat-ven-cineplex-imax-G-6'];
   for (const ssid of bookedSeatIds) {
-    db.prepare(`
-      UPDATE show_seats
-      SET status = 'BOOKED', booking_id = ?
-      WHERE id = ?
-    `).run(booking1Id, ssid);
-
-    db.prepare(`
+    await db.query(`UPDATE show_seats SET status = 'BOOKED', booking_id = $1 WHERE id = $2`, [booking1Id, ssid]);
+    await db.query(`
       INSERT INTO booking_seats (id, booking_id, show_seat_id, price_paid, seat_category)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(uuidv4(), booking1Id, ssid, 35, 'EXECUTIVE');
+      VALUES ($1, $2, $3, $4, $5)
+    `, [uuidv4(), booking1Id, ssid, 35, 'EXECUTIVE']);
   }
 
-  // Also place an active HOLD on seats G-7, G-8 by Samantha Reed (expiring in 8 minutes)
+  // Active HOLD for Samantha Reed
   const holdExpiry = new Date(Date.now() + 8 * 60 * 1000).toISOString();
-  db.prepare(`
+  await db.query(`
     UPDATE show_seats
-    SET status = 'HELD', held_by_user_id = 'usr-cust-2', hold_expires_at = ?
+    SET status = 'HELD', held_by_user_id = 'usr-cust-2', hold_expires_at = $1
     WHERE id IN ('ss-show-interstellar-1-seat-ven-cineplex-imax-G-7', 'ss-show-interstellar-1-seat-ven-cineplex-imax-G-8')
-  `).run(holdExpiry);
+  `, [holdExpiry]);
 
-  // Create Hamilton Show Booking (Sold out EXECUTIVE boxes + Waitlist entries)
+  // Hamilton Sold Out EXECUTIVE section + Waitlist
   const hamiltonShowId = 'show-hamilton-1';
-  const hamiltonExecSeats = db.prepare(`
+  const hamiltonExecSeats = await db.all(`
     SELECT ss.id, s.row_label, s.seat_number, s.default_category
     FROM show_seats ss
     JOIN seats s ON ss.seat_id = s.id
-    WHERE ss.show_id = ? AND s.default_category = 'EXECUTIVE'
-  `).all(hamiltonShowId);
+    WHERE ss.show_id = $1 AND s.default_category = 'EXECUTIVE'
+  `, [hamiltonShowId]);
 
-  // Book all EXECUTIVE seats in Hamilton to demonstrate waitlist auto-assignment
   for (let i = 0; i < hamiltonExecSeats.length; i++) {
     const seat = hamiltonExecSeats[i];
     const bId = `bk-ham-exec-${i}`;
@@ -359,37 +344,34 @@ export async function seedDatabase() {
       totalAmount: 175
     });
 
-    db.prepare(`
+    await db.query(`
       INSERT INTO bookings (id, booking_reference, user_id, show_id, total_amount, status, qr_code_data)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(bId, bRef, 'usr-cust-4', hamiltonShowId, 175, 'CONFIRMED', qr);
+      VALUES ($1, $2, $3, $4, $5, 'CONFIRMED', $6)
+    `, [bId, bRef, 'usr-cust-4', hamiltonShowId, 175, qr]);
 
-    db.prepare(`
-      UPDATE show_seats SET status = 'BOOKED', booking_id = ? WHERE id = ?
-    `).run(bId, seat.id);
-
-    db.prepare(`
+    await db.query(`UPDATE show_seats SET status = 'BOOKED', booking_id = $1 WHERE id = $2`, [bId, seat.id]);
+    await db.query(`
       INSERT INTO booking_seats (id, booking_id, show_seat_id, price_paid, seat_category)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(uuidv4(), bId, seat.id, 175, 'EXECUTIVE');
+      VALUES ($1, $2, $3, $4, $5)
+    `, [uuidv4(), bId, seat.id, 175, 'EXECUTIVE']);
   }
 
-  // Insert 2 customers on the Waitlist for Hamilton EXECUTIVE
-  db.prepare(`
+  // Waitlist entries for Hamilton
+  await db.query(`
     INSERT INTO waitlist_entries (id, show_id, user_id, seat_category, status, priority_order, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run('wl-ham-1', hamiltonShowId, 'usr-cust-2', 'EXECUTIVE', 'WAITING', 1, new Date(Date.now() - 3600 * 1000).toISOString());
+    VALUES ($1, $2, $3, $4, 'WAITING', $5, $6)
+  `, ['wl-ham-1', hamiltonShowId, 'usr-cust-2', 'EXECUTIVE', 1, new Date(Date.now() - 3600 * 1000).toISOString()]);
 
-  db.prepare(`
+  await db.query(`
     INSERT INTO waitlist_entries (id, show_id, user_id, seat_category, status, priority_order, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run('wl-ham-2', hamiltonShowId, 'usr-cust-3', 'EXECUTIVE', 'WAITING', 2, new Date(Date.now() - 1800 * 1000).toISOString());
+    VALUES ($1, $2, $3, $4, 'WAITING', $5, $6)
+  `, ['wl-ham-2', hamiltonShowId, 'usr-cust-3', 'EXECUTIVE', 2, new Date(Date.now() - 1800 * 1000).toISOString()]);
 
-  // Log initial confirmation email
-  db.prepare(`
+  // Initial confirmation email log
+  await db.query(`
     INSERT INTO emails_log (id, recipient_email, recipient_name, subject, type, html_body, qr_code_data, metadata)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+  `, [
     'em-seed-1',
     'alex.johnson@example.com',
     'Alex Johnson',
@@ -400,16 +382,12 @@ export async function seedDatabase() {
       <p>Thank you Alex! Your seats <strong>G-5, G-6 (EXECUTIVE)</strong> are reserved.</p>
       <p>Booking Reference: <strong>TKT-2026-INT901</strong></p>
       <p>Venue: Cineplex Grand IMAX Arena</p>
-      <div style="margin: 20px 0; text-align: center;">
-        <img src="${qrData1}" alt="Ticket QR Code" style="width: 200px; height: 200px; background: white; padding: 10px; border-radius: 8px;" />
-      </div>
-      <p style="color: #94a3b8; font-size: 12px;">Present this QR code at the entrance for entry.</p>
     </div>`,
     qrData1,
     JSON.stringify({ bookingReference: booking1Ref, showId: 'show-interstellar-1' })
-  );
+  ]);
 
-  console.log('--- Database Seeding Completed Successfully ---');
+  console.log('--- Database Seeding Completed Successfully on Supabase ---');
 }
 
 if (process.argv[1] && process.argv[1].endsWith('seed.js')) {

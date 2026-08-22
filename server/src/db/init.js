@@ -1,14 +1,14 @@
 import db from './connection.js';
 
-export function initDatabase() {
-  db.exec(`
+export async function initDatabase() {
+  await db.query(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'CUSTOMER',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS venues (
@@ -18,7 +18,7 @@ export function initDatabase() {
       city TEXT NOT NULL,
       capacity INTEGER NOT NULL,
       layout_config TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS seats (
@@ -29,9 +29,9 @@ export function initDatabase() {
       section TEXT NOT NULL,
       default_category TEXT NOT NULL,
       is_accessible INTEGER DEFAULT 0,
-      x_pos REAL,
-      y_pos REAL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      x_pos DOUBLE PRECISION,
+      y_pos DOUBLE PRECISION,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS events (
@@ -45,19 +45,19 @@ export function initDatabase() {
       duration_mins INTEGER NOT NULL DEFAULT 120,
       age_restriction TEXT DEFAULT 'All Ages',
       status TEXT NOT NULL DEFAULT 'ACTIVE',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS shows (
       id TEXT PRIMARY KEY,
       event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
       venue_id TEXT NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
-      start_time DATETIME NOT NULL,
-      end_time DATETIME NOT NULL,
+      start_time TIMESTAMPTZ NOT NULL,
+      end_time TIMESTAMPTZ NOT NULL,
       hold_ttl_minutes INTEGER NOT NULL DEFAULT 10,
       pricing_tiers TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'SCHEDULED',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS bookings (
@@ -65,12 +65,12 @@ export function initDatabase() {
       booking_reference TEXT UNIQUE NOT NULL,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       show_id TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
-      total_amount REAL NOT NULL,
+      total_amount DOUBLE PRECISION NOT NULL,
       status TEXT NOT NULL DEFAULT 'CONFIRMED',
       qr_code_data TEXT NOT NULL,
-      checked_in_at DATETIME,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      checked_in_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS show_seats (
@@ -79,17 +79,17 @@ export function initDatabase() {
       seat_id TEXT NOT NULL REFERENCES seats(id) ON DELETE CASCADE,
       status TEXT NOT NULL DEFAULT 'AVAILABLE',
       held_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
-      hold_expires_at DATETIME,
+      hold_expires_at TIMESTAMPTZ,
       booking_id TEXT REFERENCES bookings(id) ON DELETE SET NULL,
       version INTEGER DEFAULT 0,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS booking_seats (
       id TEXT PRIMARY KEY,
       booking_id TEXT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
       show_seat_id TEXT NOT NULL REFERENCES show_seats(id) ON DELETE CASCADE,
-      price_paid REAL NOT NULL,
+      price_paid DOUBLE PRECISION NOT NULL,
       seat_category TEXT NOT NULL
     );
 
@@ -100,11 +100,11 @@ export function initDatabase() {
       seat_category TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'WAITING',
       priority_order INTEGER NOT NULL,
-      offer_expires_at DATETIME,
+      offer_expires_at TIMESTAMPTZ,
       offered_show_seat_id TEXT REFERENCES show_seats(id) ON DELETE SET NULL,
       claim_token TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS emails_log (
@@ -116,10 +116,9 @@ export function initDatabase() {
       html_body TEXT NOT NULL,
       qr_code_data TEXT,
       metadata TEXT,
-      sent_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      sent_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- Indices for high performance concurrent transactions
     CREATE INDEX IF NOT EXISTS idx_show_seats_show_status ON show_seats(show_id, status);
     CREATE INDEX IF NOT EXISTS idx_show_seats_held_expires ON show_seats(status, hold_expires_at);
     CREATE INDEX IF NOT EXISTS idx_show_seats_seat ON show_seats(seat_id);
@@ -132,9 +131,9 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_shows_venue ON shows(venue_id);
   `);
 
-  console.log('Database initialized successfully.');
+  console.log('Database initialized successfully on Supabase PostgreSQL.');
 }
 
 if (process.argv[1] && process.argv[1].endsWith('init.js')) {
-  initDatabase();
+  initDatabase().catch(console.error);
 }

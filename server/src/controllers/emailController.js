@@ -1,20 +1,20 @@
 import db from '../db/connection.js';
 
-export function listEmails(req, res) {
+export async function listEmails(req, res) {
   const { limit = 50 } = req.query;
-  const emails = db.prepare(`
+  const emails = await db.all(`
     SELECT id, recipient_email, recipient_name, subject, type, qr_code_data, metadata, sent_at
     FROM emails_log
     ORDER BY sent_at DESC
     LIMIT ?
-  `).all(parseInt(limit, 10));
+  `, [parseInt(limit, 10)]);
 
   res.json({ emails });
 }
 
-export function getEmail(req, res) {
+export async function getEmail(req, res) {
   const { id } = req.params;
-  const email = db.prepare('SELECT * FROM emails_log WHERE id = ?').get(id);
+  const email = await db.get('SELECT * FROM emails_log WHERE id = ?', [id]);
 
   if (!email) {
     return res.status(404).json({ error: 'Email not found.' });
@@ -23,7 +23,7 @@ export function getEmail(req, res) {
   res.json({ email });
 }
 
-export function clearEmails(req, res) {
-  db.prepare('DELETE FROM emails_log').run();
+export async function clearEmails(req, res) {
+  await db.query('DELETE FROM emails_log');
   res.json({ success: true, message: 'Mailbox cleared.' });
 }

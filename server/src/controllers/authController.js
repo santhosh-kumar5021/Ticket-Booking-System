@@ -13,7 +13,7 @@ export async function register(req, res) {
   const validRoles = ['CUSTOMER', 'ORGANISER', 'ADMIN'];
   const userRole = validRoles.includes(role.toUpperCase()) ? role.toUpperCase() : 'CUSTOMER';
 
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase().trim());
+  const existing = await db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase().trim()]);
   if (existing) {
     return res.status(400).json({ error: 'An account with this email already exists.' });
   }
@@ -21,10 +21,10 @@ export async function register(req, res) {
   const passwordHash = await bcrypt.hash(password, 10);
   const userId = `usr-${uuidv4()}`;
 
-  db.prepare(`
+  await db.query(`
     INSERT INTO users (id, name, email, password_hash, role)
     VALUES (?, ?, ?, ?, ?)
-  `).run(userId, name.trim(), email.toLowerCase().trim(), passwordHash, userRole);
+  `, [userId, name.trim(), email.toLowerCase().trim(), passwordHash, userRole]);
 
   const token = signToken({ id: userId, email: email.toLowerCase().trim(), role: userRole });
 
@@ -41,7 +41,7 @@ export async function login(req, res) {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim());
+  const user = await db.get('SELECT * FROM users WHERE email = ?', [email.toLowerCase().trim()]);
   if (!user) {
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
@@ -63,14 +63,14 @@ export function getMe(req, res) {
   res.json({ user: req.user });
 }
 
-export function getDemoUsers(req, res) {
-  const users = db.prepare('SELECT id, name, email, role FROM users ORDER BY role DESC, name ASC').all();
+export async function getDemoUsers(req, res) {
+  const users = await db.all('SELECT id, name, email, role FROM users ORDER BY role DESC, name ASC');
   res.json({ users });
 }
 
-export function switchUser(req, res) {
+export async function switchUser(req, res) {
   const { userId } = req.body;
-  const user = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(userId);
+  const user = await db.get('SELECT id, name, email, role FROM users WHERE id = ?', [userId]);
   if (!user) {
     return res.status(404).json({ error: 'User not found.' });
   }

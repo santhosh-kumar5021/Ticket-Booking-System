@@ -9,7 +9,7 @@ build/
 .env.local
 .env.*.local
 !.env.example
-!server/.env.example
+!.env.example
 
 # SQLite databases & temp files
 *.db
@@ -19,6 +19,7 @@ build/
 data/
 server/data/
 
-# IDEs
+# IDEs & Agents
 .vscode/
 .idea/
+.agents/

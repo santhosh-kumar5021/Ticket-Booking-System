@@ -6,11 +6,11 @@ import { reallocateSeatOrRelease } from '../services/holdWorker.js';
 /**
  * Get show details with full real-time interactive seat grid
  */
-export function getShow(req, res) {
+export async function getShow(req, res) {
   const { id } = req.params;
   const currentUserId = req.user ? req.user.id : null;
 
-  const show = db.prepare(`
+  const show = await db.get(`
     SELECT s.*, e.title as event_title, e.category as event_category, e.image_url as event_image,
            e.banner_url as event_banner, e.duration_mins, e.age_restriction,
            v.name as venue_name, v.address as venue_address, v.city as venue_city,
@@ -19,16 +19,15 @@ export function getShow(req, res) {
     JOIN events e ON s.event_id = e.id
     JOIN venues v ON s.venue_id = v.id
     WHERE s.id = ?
-  `).get(id);
+  `, [id]);
 
   if (!show) {
     return res.status(404).json({ error: 'Show not found.' });
   }
 
-  const pricingTiers = JSON.parse(show.pricing_tiers || '{}');
+  const pricingTiers = typeof show.pricing_tiers === 'string' ? JSON.parse(show.pricing_tiers || '{}') : show.pricing_tiers;
 
-  // Query all show seats combined with their physical seat coordinates & layout metadata
-  const seats = db.prepare(`
+  const seats = await db.all(`
     SELECT ss.id as show_seat_id, ss.show_id, ss.status, ss.held_by_user_id, ss.hold_expires_at,
            s.id as seat_id, s.row_label, s.seat_number, s.section, s.default_category,
            s.is_accessible, s.x_pos, s.y_pos
@@ -36,15 +35,13 @@ export function getShow(req, res) {
     JOIN seats s ON ss.seat_id = s.id
     WHERE ss.show_id = ?
     ORDER BY s.row_label ASC, s.seat_number ASC
-  `).all(id);
+  `, [id]);
 
   const nowIso = new Date().toISOString();
 
-  // Map seats with real-time active hold resolution & pricing
   const mappedSeats = seats.map(seat => {
     let effectiveStatus = seat.status;
-    // Lazy expiry check
-    if (seat.status === 'HELD' && seat.hold_expires_at && seat.hold_expires_at < nowIso) {
+    if (seat.status === 'HELD' && seat.hold_expires_at && new Date(seat.hold_expires_at).toISOString() < nowIso) {
       effectiveStatus = 'AVAILABLE';
     }
 
@@ -68,7 +65,6 @@ export function getShow(req, res) {
     };
   });
 
-  // Calculate tier breakdown & availability
   const categoryStats = {};
   mappedSeats.forEach(s => {
     if (!categoryStats[s.category]) {
@@ -84,7 +80,7 @@ export function getShow(req, res) {
     show: {
       ...show,
       pricing_tiers: pricingTiers,
-      venue_layout_config: JSON.parse(show.venue_layout_config || '{}'),
+      venue_layout_config: typeof show.venue_layout_config === 'string' ? JSON.parse(show.venue_layout_config || '{}') : show.venue_layout_config,
       categoryStats
     },
     seats: mappedSeats
@@ -92,11 +88,9 @@ export function getShow(req, res) {
 }
 
 /**
- * HARD CONCURRENCY SEAT HOLD ATTEMPT
- * Uses SQLite transaction with BEGIN IMMEDIATE semantics.
- * Two simultaneous requests for the same seat can NEVER both succeed.
+ * Atomic Seat Locking Attempt
  */
-export function holdSeats(req, res) {
+export async function holdSeats(req, res) {
   const { id: showId } = req.params;
   const { showSeatIds = [] } = req.body;
   const userId = req.user.id;
@@ -105,7 +99,7 @@ export function holdSeats(req, res) {
     return res.status(400).json({ error: 'Please select at least one seat to place a hold.' });
   }
 
-  const show = db.prepare('SELECT id, hold_ttl_minutes, pricing_tiers FROM shows WHERE id = ?').get(showId);
+  const show = await db.get('SELECT id, hold_ttl_minutes, pricing_tiers FROM shows WHERE id = ?', [showId]);
   if (!show) {
     return res.status(404).json({ error: 'Show not found.' });
   }
@@ -114,27 +108,24 @@ export function holdSeats(req, res) {
   const holdExpiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000).toISOString();
   const nowIso = new Date().toISOString();
 
-  // Execute atomic seat locking transaction
-  const executeHoldTx = db.transaction(() => {
+  try {
     const placeholders = showSeatIds.map(() => '?').join(',');
 
-    // 1. Lock and inspect requested seats
-    const currentSeats = db.prepare(`
+    const currentSeats = await db.all(`
       SELECT ss.id, ss.status, ss.held_by_user_id, ss.hold_expires_at, s.row_label, s.seat_number
       FROM show_seats ss
       JOIN seats s ON ss.seat_id = s.id
       WHERE ss.id IN (${placeholders}) AND ss.show_id = ?
-    `).all(...showSeatIds, showId);
+    `, [...showSeatIds, showId]);
 
     if (currentSeats.length !== showSeatIds.length) {
-      throw { status: 400, message: 'One or more selected seats do not exist for this show.' };
+      return res.status(400).json({ error: 'One or more selected seats do not exist for this show.' });
     }
 
-    // 2. Verify every single requested seat is available (or already held by this user or expired hold)
     const unavailableSeats = [];
     for (const seat of currentSeats) {
       const isAvailable = seat.status === 'AVAILABLE';
-      const isExpiredHold = seat.status === 'HELD' && seat.hold_expires_at && seat.hold_expires_at < nowIso;
+      const isExpiredHold = seat.status === 'HELD' && seat.hold_expires_at && new Date(seat.hold_expires_at).toISOString() < nowIso;
       const isHeldBySameUser = seat.status === 'HELD' && seat.held_by_user_id === userId;
 
       if (!isAvailable && !isExpiredHold && !isHeldBySameUser) {
@@ -143,39 +134,24 @@ export function holdSeats(req, res) {
     }
 
     if (unavailableSeats.length > 0) {
-      throw {
-        status: 409,
-        message: `Concurrency Conflict: The following seat(s) were just taken by another customer: ${unavailableSeats.join(', ')}`,
+      return res.status(409).json({
+        error: `Concurrency Conflict: The following seat(s) were just taken by another customer: ${unavailableSeats.join(', ')}`,
         conflictingSeats: unavailableSeats
-      };
+      });
     }
-
-    // 3. Atomically update all requested seats to HELD
-    const updateStmt = db.prepare(`
-      UPDATE show_seats
-      SET status = 'HELD',
-          held_by_user_id = ?,
-          hold_expires_at = ?,
-          version = version + 1,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `);
 
     for (const seat of currentSeats) {
-      updateStmt.run(userId, holdExpiresAt, seat.id);
+      await db.query(`
+        UPDATE show_seats
+        SET status = 'HELD',
+            held_by_user_id = ?,
+            hold_expires_at = ?,
+            version = version + 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `, [userId, holdExpiresAt, seat.id]);
     }
 
-    return {
-      heldSeatIds: showSeatIds,
-      holdExpiresAt,
-      ttlMinutes
-    };
-  });
-
-  try {
-    const result = executeHoldTx();
-
-    // Broadcast update via SSE
     broadcastSeatUpdate(showId, {
       updatedSeats: showSeatIds.map(id => ({ id, status: 'HELD', heldBy: userId })),
       reason: 'SEAT_HELD'
@@ -184,13 +160,12 @@ export function holdSeats(req, res) {
     res.json({
       success: true,
       message: `Held ${showSeatIds.length} seat(s) successfully. Complete checkout before timer expires.`,
-      ...result
+      heldSeatIds: showSeatIds,
+      holdExpiresAt,
+      ttlMinutes
     });
   } catch (err) {
-    if (err.status) {
-      return res.status(err.status).json({ error: err.message, conflictingSeats: err.conflictingSeats });
-    }
-    console.error('Seat hold transaction error:', err);
+    console.error('Seat hold error:', err);
     res.status(500).json({ error: 'Failed to lock seats due to concurrent transaction conflict.' });
   }
 }
@@ -198,7 +173,7 @@ export function holdSeats(req, res) {
 /**
  * Release seat holds placed by user
  */
-export function releaseHold(req, res) {
+export async function releaseHold(req, res) {
   const { id: showId } = req.params;
   const { showSeatIds = [] } = req.body;
   const userId = req.user.id;
@@ -207,22 +182,19 @@ export function releaseHold(req, res) {
     return res.status(400).json({ error: 'No seat IDs provided.' });
   }
 
-  const releaseTx = db.transaction(() => {
+  try {
     const placeholders = showSeatIds.map(() => '?').join(',');
-    const seatsToRelease = db.prepare(`
+    const seatsToRelease = await db.all(`
       SELECT id FROM show_seats
       WHERE id IN (${placeholders}) AND show_id = ? AND status = 'HELD' AND held_by_user_id = ?
-    `).all(...showSeatIds, showId, userId);
+    `, [...showSeatIds, showId, userId]);
 
+    const released = [];
     for (const s of seatsToRelease) {
-      reallocateSeatOrRelease(s.id, db);
+      await reallocateSeatOrRelease(s.id);
+      released.push(s.id);
     }
 
-    return seatsToRelease.map(s => s.id);
-  });
-
-  try {
-    const released = releaseTx();
     res.json({ success: true, releasedSeats: released });
   } catch (err) {
     console.error('Failed to release hold:', err);
@@ -233,7 +205,7 @@ export function releaseHold(req, res) {
 /**
  * Create a new show for an event
  */
-export function createShow(req, res) {
+export async function createShow(req, res) {
   const {
     event_id,
     venue_id,
@@ -249,11 +221,11 @@ export function createShow(req, res) {
 
   const showId = `show-${uuidv4()}`;
 
-  const createShowTx = db.transaction(() => {
-    db.prepare(`
+  try {
+    await db.query(`
       INSERT INTO shows (id, event_id, venue_id, start_time, end_time, hold_ttl_minutes, pricing_tiers)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(
+    `, [
       showId,
       event_id,
       venue_id,
@@ -261,26 +233,22 @@ export function createShow(req, res) {
       end_time,
       parseInt(hold_ttl_minutes, 10),
       JSON.stringify(pricing_tiers)
-    );
+    ]);
 
-    // Populate show_seats from venue seats
-    const venueSeats = db.prepare('SELECT id FROM seats WHERE venue_id = ?').all(venue_id);
-    const insertShowSeat = db.prepare(`
-      INSERT INTO show_seats (id, show_id, seat_id, status)
-      VALUES (?, ?, ?, 'AVAILABLE')
-    `);
-
-    for (const seat of venueSeats) {
-      const showSeatId = `ss-${showId}-${seat.id}`;
-      insertShowSeat.run(showSeatId, showId, seat.id);
+    const venueSeats = await db.all('SELECT id FROM seats WHERE venue_id = ?', [venue_id]);
+    
+    if (venueSeats.length > 0) {
+      const showSeatValues = venueSeats.map(seat => {
+        const showSeatId = `ss-${showId}-${seat.id}`;
+        return `('${showSeatId}', '${showId}', '${seat.id}', 'AVAILABLE')`;
+      });
+      await db.query(`
+        INSERT INTO show_seats (id, show_id, seat_id, status)
+        VALUES ${showSeatValues.join(', ')}
+      `);
     }
 
-    return { showId, totalSeats: venueSeats.length };
-  });
-
-  try {
-    const result = createShowTx();
-    res.status(201).json({ show: result });
+    res.status(201).json({ show: { showId, totalSeats: venueSeats.length } });
   } catch (err) {
     console.error('Failed to create show:', err);
     res.status(500).json({ error: 'Failed to schedule show.' });

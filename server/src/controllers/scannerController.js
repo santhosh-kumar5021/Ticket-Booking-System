@@ -4,12 +4,11 @@ import { verifyQRPayload } from '../utils/qr.js';
 /**
  * Gate scanner & ticket validation endpoint
  */
-export function scanTicket(req, res) {
+export async function scanTicket(req, res) {
   const { qrPayload, bookingReference } = req.body;
 
   let refToLookup = bookingReference;
 
-  // 1. If raw QR code data was scanned, verify cryptographic signature
   if (qrPayload) {
     const verifyResult = verifyQRPayload(qrPayload);
     if (!verifyResult.valid) {
@@ -26,8 +25,7 @@ export function scanTicket(req, res) {
     return res.status(400).json({ valid: false, error: 'No QR payload or booking reference supplied.' });
   }
 
-  // 2. Fetch booking from DB
-  const booking = db.prepare(`
+  const booking = await db.get(`
     SELECT b.*, u.name as customer_name, u.email as customer_email,
            s.start_time, s.end_time,
            e.title as event_title, e.category as event_category,
@@ -38,7 +36,7 @@ export function scanTicket(req, res) {
     JOIN events e ON s.event_id = e.id
     JOIN venues v ON s.venue_id = v.id
     WHERE b.booking_reference = ? OR b.id = ?
-  `).get(refToLookup, refToLookup);
+  `, [refToLookup, refToLookup]);
 
   if (!booking) {
     return res.status(404).json({
@@ -57,16 +55,14 @@ export function scanTicket(req, res) {
     });
   }
 
-  // 3. Fetch seats associated with this booking
-  const seats = db.prepare(`
+  const seats = await db.all(`
     SELECT bs.price_paid, bs.seat_category, s.row_label, s.seat_number, s.section
     FROM booking_seats bs
     JOIN show_seats ss ON bs.show_seat_id = ss.id
     JOIN seats s ON ss.seat_id = s.id
     WHERE bs.booking_id = ?
-  `).all(booking.id);
+  `, [booking.id]);
 
-  // 4. Duplicate Check-in Protection
   if (booking.checked_in_at) {
     return res.status(409).json({
       valid: false,
@@ -76,13 +72,12 @@ export function scanTicket(req, res) {
     });
   }
 
-  // 5. Mark as successfully checked in
   const checkedInTime = new Date().toISOString();
-  db.prepare(`
+  await db.query(`
     UPDATE bookings
     SET checked_in_at = ?, status = 'CHECKED_IN', updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(checkedInTime, booking.id);
+  `, [checkedInTime, booking.id]);
 
   res.json({
     valid: true,

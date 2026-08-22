@@ -10,8 +10,8 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
  * Reallocates a freed seat to the next person waiting in queue for that show and category.
  * If no waitlist entry exists, resets seat to AVAILABLE.
  */
-export function reallocateSeatOrRelease(showSeatId, txDb = db) {
-  const seatInfo = txDb.prepare(`
+export async function reallocateSeatOrRelease(showSeatId) {
+  const seatInfo = await db.get(`
     SELECT ss.id, ss.show_id, s.row_label, s.seat_number, s.default_category,
            sh.start_time, e.title as event_title, v.name as venue_name,
            e.category as event_category
@@ -21,26 +21,24 @@ export function reallocateSeatOrRelease(showSeatId, txDb = db) {
     JOIN events e ON sh.event_id = e.id
     JOIN venues v ON sh.venue_id = v.id
     WHERE ss.id = ?
-  `).get(showSeatId);
+  `, [showSeatId]);
 
   if (!seatInfo) return null;
 
-  // Look for next in line for this category
-  const nextWaitlisted = txDb.prepare(`
+  const nextWaitlisted = await db.get(`
     SELECT w.*, u.name as user_name, u.email as user_email
     FROM waitlist_entries w
     JOIN users u ON w.user_id = u.id
     WHERE w.show_id = ? AND w.seat_category = ? AND w.status = 'WAITING'
     ORDER BY w.priority_order ASC, w.created_at ASC
     LIMIT 1
-  `).get(seatInfo.show_id, seatInfo.default_category);
+  `, [seatInfo.show_id, seatInfo.default_category]);
 
   if (nextWaitlisted) {
     const offerExpiresAt = new Date(Date.now() + WAITLIST_OFFER_TTL_MINUTES * 60 * 1000).toISOString();
     const claimToken = uuidv4();
 
-    // 1. Mark waitlist entry as OFFERED
-    txDb.prepare(`
+    await db.query(`
       UPDATE waitlist_entries
       SET status = 'OFFERED',
           offer_expires_at = ?,
@@ -48,21 +46,19 @@ export function reallocateSeatOrRelease(showSeatId, txDb = db) {
           claim_token = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(offerExpiresAt, showSeatId, claimToken, nextWaitlisted.id);
+    `, [offerExpiresAt, showSeatId, claimToken, nextWaitlisted.id]);
 
-    // 2. Lock seat for this waitlist user
-    txDb.prepare(`
+    await db.query(`
       UPDATE show_seats
       SET status = 'HELD',
           held_by_user_id = ?,
           hold_expires_at = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(nextWaitlisted.user_id, offerExpiresAt, showSeatId);
+    `, [nextWaitlisted.user_id, offerExpiresAt, showSeatId]);
 
     const claimUrl = `${CLIENT_URL}/claim-waitlist/${nextWaitlisted.id}?token=${claimToken}`;
 
-    // 3. Dispatch Email notification asynchronously
     sendWaitlistOffer({
       user: { name: nextWaitlisted.user_name, email: nextWaitlisted.user_email },
       waitlistEntry: nextWaitlisted,
@@ -74,7 +70,6 @@ export function reallocateSeatOrRelease(showSeatId, txDb = db) {
       expiresAt: offerExpiresAt
     }).catch(err => console.error('Failed to send waitlist email offer:', err));
 
-    // 4. Send Realtime SSE push notification to user
     notifyUser(nextWaitlisted.user_id, {
       type: 'WAITLIST_OFFER_RECEIVED',
       waitlistId: nextWaitlisted.id,
@@ -86,7 +81,6 @@ export function reallocateSeatOrRelease(showSeatId, txDb = db) {
       claimToken
     });
 
-    // 5. Broadcast to all seat map viewers that seat is held by a waitlisted user
     broadcastSeatUpdate(seatInfo.show_id, {
       updatedSeats: [{ id: showSeatId, status: 'HELD', heldBy: nextWaitlisted.user_id }],
       reason: 'WAITLIST_OFFERED'
@@ -95,8 +89,7 @@ export function reallocateSeatOrRelease(showSeatId, txDb = db) {
     console.log(`[Waitlist] Cascaded seat ${seatInfo.row_label}-${seatInfo.seat_number} to user ${nextWaitlisted.user_email} (Exp: ${offerExpiresAt})`);
     return { reallocated: true, waitlistId: nextWaitlisted.id };
   } else {
-    // No waitlist candidates; return seat to AVAILABLE pool
-    txDb.prepare(`
+    await db.query(`
       UPDATE show_seats
       SET status = 'AVAILABLE',
           held_by_user_id = NULL,
@@ -104,7 +97,7 @@ export function reallocateSeatOrRelease(showSeatId, txDb = db) {
           booking_id = NULL,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(showSeatId);
+    `, [showSeatId]);
 
     broadcastSeatUpdate(seatInfo.show_id, {
       updatedSeats: [{ id: showSeatId, status: 'AVAILABLE', heldBy: null }],
@@ -119,34 +112,31 @@ export function reallocateSeatOrRelease(showSeatId, txDb = db) {
 /**
  * Background tick runner: checks expired holds & expired waitlist offers
  */
-export function checkExpiredHolds() {
+export async function checkExpiredHolds() {
   const nowIso = new Date().toISOString();
 
-  // 1. Find all expired HELD seats
-  const expiredHolds = db.prepare(`
+  const expiredHolds = await db.all(`
     SELECT ss.id, ss.show_id, ss.held_by_user_id
     FROM show_seats ss
     WHERE ss.status = 'HELD' AND ss.hold_expires_at IS NOT NULL AND ss.hold_expires_at < ?
-  `).all(nowIso);
+  `, [nowIso]);
 
   for (const hold of expiredHolds) {
-    // Check if there was an active waitlist offer linked to this seat
-    const waitlistOffer = db.prepare(`
+    const waitlistOffer = await db.get(`
       SELECT w.*, u.name as user_name, u.email as user_email, e.title as event_title
       FROM waitlist_entries w
       JOIN users u ON w.user_id = u.id
       JOIN shows sh ON w.show_id = sh.id
       JOIN events e ON sh.event_id = e.id
       WHERE w.offered_show_seat_id = ? AND w.status = 'OFFERED'
-    `).get(hold.id);
+    `, [hold.id]);
 
     if (waitlistOffer) {
-      // Mark offer EXPIRED
-      db.prepare(`
+      await db.query(`
         UPDATE waitlist_entries
         SET status = 'EXPIRED', updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(waitlistOffer.id);
+      `, [waitlistOffer.id]);
 
       sendWaitlistExpiredNotice({
         user: { name: waitlistOffer.user_name, email: waitlistOffer.user_email },
@@ -162,29 +152,27 @@ export function checkExpiredHolds() {
       });
     }
 
-    // Reallocate or release
-    reallocateSeatOrRelease(hold.id);
+    await reallocateSeatOrRelease(hold.id);
   }
 
-  // 2. Also check any orphan OFFERED waitlist entries whose timer passed
-  const expiredOffers = db.prepare(`
+  const expiredOffers = await db.all(`
     SELECT w.*, u.name as user_name, u.email as user_email, e.title as event_title
     FROM waitlist_entries w
     JOIN users u ON w.user_id = u.id
     JOIN shows sh ON w.show_id = sh.id
     JOIN events e ON sh.event_id = e.id
     WHERE w.status = 'OFFERED' AND w.offer_expires_at IS NOT NULL AND w.offer_expires_at < ?
-  `).all(nowIso);
+  `, [nowIso]);
 
   for (const offer of expiredOffers) {
-    db.prepare(`
+    await db.query(`
       UPDATE waitlist_entries
       SET status = 'EXPIRED', updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(offer.id);
+    `, [offer.id]);
 
     if (offer.offered_show_seat_id) {
-      reallocateSeatOrRelease(offer.offered_show_seat_id);
+      await reallocateSeatOrRelease(offer.offered_show_seat_id);
     }
   }
 }
@@ -193,9 +181,9 @@ let workerInterval = null;
 
 export function startHoldWorker(intervalMs = 3000) {
   if (workerInterval) clearInterval(workerInterval);
-  workerInterval = setInterval(() => {
+  workerInterval = setInterval(async () => {
     try {
-      checkExpiredHolds();
+      await checkExpiredHolds();
     } catch (err) {
       console.error('[HoldWorker Error]:', err);
     }

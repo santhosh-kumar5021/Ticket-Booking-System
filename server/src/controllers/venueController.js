@@ -1,34 +1,34 @@
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db/connection.js';
 
-export function listVenues(req, res) {
-  const venues = db.prepare('SELECT * FROM venues ORDER BY name ASC').all();
+export async function listVenues(req, res) {
+  const venues = await db.all('SELECT * FROM venues ORDER BY name ASC');
   const parsed = venues.map(v => ({
     ...v,
-    layout_config: JSON.parse(v.layout_config || '{}')
+    layout_config: typeof v.layout_config === 'string' ? JSON.parse(v.layout_config || '{}') : v.layout_config
   }));
   res.json({ venues: parsed });
 }
 
-export function getVenue(req, res) {
+export async function getVenue(req, res) {
   const { id } = req.params;
-  const venue = db.prepare('SELECT * FROM venues WHERE id = ?').get(id);
+  const venue = await db.get('SELECT * FROM venues WHERE id = ?', [id]);
   if (!venue) {
     return res.status(404).json({ error: 'Venue not found.' });
   }
 
-  const seats = db.prepare('SELECT * FROM seats WHERE venue_id = ? ORDER BY row_label ASC, seat_number ASC').all(id);
+  const seats = await db.all('SELECT * FROM seats WHERE venue_id = ? ORDER BY row_label ASC, seat_number ASC', [id]);
 
   res.json({
     venue: {
       ...venue,
-      layout_config: JSON.parse(venue.layout_config || '{}'),
+      layout_config: typeof venue.layout_config === 'string' ? JSON.parse(venue.layout_config || '{}') : venue.layout_config,
       seats
     }
   });
 }
 
-export function createVenue(req, res) {
+export async function createVenue(req, res) {
   const { name, address, city, screenLabel = 'Stage / Screen', sections = [], aislesAfterCols = [] } = req.body;
 
   if (!name || !address || !city || sections.length === 0) {
@@ -44,9 +44,9 @@ export function createVenue(req, res) {
     aislesAfterCols
   };
 
-  const createTx = db.transaction(() => {
-    // Generate seats from sections
+  try {
     let currentY = 0;
+    const seatValues = [];
     const createdSeats = [];
 
     sections.forEach((section, sIdx) => {
@@ -63,28 +63,28 @@ export function createVenue(req, res) {
           const xPos = col * 40 + (aislesAfterCols.some(a => col > a) ? 20 : 0);
           const yPos = currentY + rIdx * 35;
 
-          db.prepare(`
-            INSERT INTO seats (id, venue_id, row_label, seat_number, section, default_category, is_accessible, x_pos, y_pos)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(seatId, venueId, rowLabel, col, secName, cat, isAccessible, xPos, yPos);
-
+          seatValues.push(`('${seatId}', '${venueId}', '${rowLabel}', ${col}, '${secName}', '${cat}', ${isAccessible}, ${xPos}, ${yPos})`);
           createdSeats.push({ id: seatId, row_label: rowLabel, seat_number: col, section: secName, default_category: cat });
         }
       });
       currentY += (rows.length + 1) * 35;
     });
 
-    db.prepare(`
+    if (seatValues.length > 0) {
+      await db.query(`
+        INSERT INTO seats (id, venue_id, row_label, seat_number, section, default_category, is_accessible, x_pos, y_pos)
+        VALUES ${seatValues.join(', ')}
+      `);
+    }
+
+    await db.query(`
       INSERT INTO venues (id, name, address, city, capacity, layout_config)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(venueId, name, address, city, totalCapacity, JSON.stringify(layoutConfig));
+    `, [venueId, name, address, city, totalCapacity, JSON.stringify(layoutConfig)]);
 
-    return { id: venueId, name, address, city, capacity: totalCapacity, seatsCount: createdSeats.length };
-  });
-
-  try {
-    const result = createTx();
-    res.status(201).json({ venue: result });
+    res.status(201).json({
+      venue: { id: venueId, name, address, city, capacity: totalCapacity, seatsCount: createdSeats.length }
+    });
   } catch (err) {
     console.error('Failed to create venue:', err);
     res.status(500).json({ error: 'Failed to create venue layout.' });

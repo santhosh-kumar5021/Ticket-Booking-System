@@ -19,7 +19,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable CORS for client development and production origins
 app.use(
   cors({
     origin: '*',
@@ -30,12 +29,13 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Initialize DB tables
-initDatabase();
+// Initialize DB tables asynchronously
+await initDatabase();
 
 // Auto-seed demo catalogue if empty
 try {
-  const eventCount = db.prepare('SELECT COUNT(*) as count FROM events').get()?.count || 0;
+  const eventRes = await db.get('SELECT COUNT(*)::int as count FROM events');
+  const eventCount = eventRes ? eventRes.count : 0;
   if (eventCount === 0) {
     console.log('Database empty. Automatically populating initial seed dataset...');
     await seedDatabase();
@@ -56,7 +56,7 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'Ticket Booking Platform API',
-    concurrency_engine: 'SQLite WAL Immediate Isolation',
+    concurrency_engine: 'Supabase PostgreSQL Cloud DB',
     worker: 'Active'
   });
 });
@@ -69,7 +69,7 @@ const server = app.listen(PORT, () => {
   console.log(`\n======================================================`);
   console.log(`🚀 Ticket Booking API Server running on port ${PORT}`);
   console.log(`📡 Health Check: http://localhost:${PORT}/health`);
-  console.log(`⚡ Concurrency Engine: SQLite WAL Mode Active`);
+  console.log(`⚡ Concurrency Engine: Supabase PostgreSQL Active`);
   console.log(`⏳ Hold TTL & Waitlist Cascade Worker: Running`);
   console.log(`======================================================\n`);
 });

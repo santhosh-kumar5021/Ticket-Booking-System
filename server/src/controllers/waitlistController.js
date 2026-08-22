@@ -5,7 +5,7 @@ import { reallocateSeatOrRelease } from '../services/holdWorker.js';
 /**
  * Customer joins waitlist for a specific show and seat tier category
  */
-export function joinWaitlist(req, res) {
+export async function joinWaitlist(req, res) {
   const { showId, seatCategory } = req.body;
   const userId = req.user.id;
 
@@ -13,23 +13,22 @@ export function joinWaitlist(req, res) {
     return res.status(400).json({ error: 'Show ID and Seat Category are required to join the waitlist.' });
   }
 
-  const show = db.prepare(`
+  const show = await db.get(`
     SELECT s.*, e.title as event_title, v.name as venue_name
     FROM shows s
     JOIN events e ON s.event_id = e.id
     JOIN venues v ON s.venue_id = v.id
     WHERE s.id = ?
-  `).get(showId);
+  `, [showId]);
 
   if (!show) {
     return res.status(404).json({ error: 'Show not found.' });
   }
 
-  // Check if user already has an active waiting or offered entry for this show & category
-  const existing = db.prepare(`
+  const existing = await db.get(`
     SELECT * FROM waitlist_entries
     WHERE show_id = ? AND user_id = ? AND seat_category = ? AND status IN ('WAITING', 'OFFERED')
-  `).get(showId, userId, seatCategory);
+  `, [showId, userId, seatCategory]);
 
   if (existing) {
     return res.status(400).json({
@@ -37,26 +36,26 @@ export function joinWaitlist(req, res) {
     });
   }
 
-  // Calculate next priority order in FIFO queue
-  const nextOrderResult = db.prepare(`
+  const nextOrderResult = await db.get(`
     SELECT COALESCE(MAX(priority_order), 0) + 1 as next_order
     FROM waitlist_entries
     WHERE show_id = ? AND seat_category = ?
-  `).get(showId, seatCategory);
+  `, [showId, seatCategory]);
 
   const priorityOrder = nextOrderResult ? nextOrderResult.next_order : 1;
   const waitlistId = `wl-${uuidv4()}`;
 
-  db.prepare(`
+  await db.query(`
     INSERT INTO waitlist_entries (id, show_id, user_id, seat_category, status, priority_order)
     VALUES (?, ?, ?, ?, 'WAITING', ?)
-  `).run(waitlistId, showId, userId, seatCategory, priorityOrder);
+  `, [waitlistId, showId, userId, seatCategory, priorityOrder]);
 
-  // Get active queue position ahead
-  const aheadCount = db.prepare(`
-    SELECT COUNT(*) as count FROM waitlist_entries
+  const aheadCountRes = await db.get(`
+    SELECT COUNT(*)::int as count FROM waitlist_entries
     WHERE show_id = ? AND seat_category = ? AND status = 'WAITING' AND priority_order < ?
-  `).get(showId, seatCategory, priorityOrder).count;
+  `, [showId, seatCategory, priorityOrder]);
+
+  const aheadCount = aheadCountRes ? aheadCountRes.count : 0;
 
   res.status(201).json({
     success: true,
@@ -76,10 +75,10 @@ export function joinWaitlist(req, res) {
 /**
  * Get all waitlist entries for the logged-in customer
  */
-export function getUserWaitlist(req, res) {
+export async function getUserWaitlist(req, res) {
   const userId = req.user.id;
 
-  const entries = db.prepare(`
+  const entries = await db.all(`
     SELECT w.*,
            s.start_time, s.pricing_tiers,
            e.title as event_title, e.category as event_category, e.image_url as event_image,
@@ -94,10 +93,10 @@ export function getUserWaitlist(req, res) {
     LEFT JOIN seats sec ON ss.seat_id = sec.id
     WHERE w.user_id = ?
     ORDER BY w.created_at DESC
-  `).all(userId);
+  `, [userId]);
 
   const mapped = entries.map(entry => {
-    const pricing = JSON.parse(entry.pricing_tiers || '{}');
+    const pricing = typeof entry.pricing_tiers === 'string' ? JSON.parse(entry.pricing_tiers || '{}') : entry.pricing_tiers;
     const price = pricing[entry.seat_category] || 50;
 
     return {
@@ -113,10 +112,10 @@ export function getUserWaitlist(req, res) {
 /**
  * Get single waitlist offer by ID / claim token
  */
-export function getWaitlistOffer(req, res) {
+export async function getWaitlistOffer(req, res) {
   const { id } = req.params;
 
-  const entry = db.prepare(`
+  const entry = await db.get(`
     SELECT w.*,
            s.start_time, s.pricing_tiers,
            e.title as event_title, e.category as event_category, e.image_url as event_image,
@@ -129,13 +128,13 @@ export function getWaitlistOffer(req, res) {
     LEFT JOIN show_seats ss ON w.offered_show_seat_id = ss.id
     LEFT JOIN seats sec ON ss.seat_id = sec.id
     WHERE w.id = ?
-  `).get(id);
+  `, [id]);
 
   if (!entry) {
     return res.status(404).json({ error: 'Waitlist offer not found.' });
   }
 
-  const pricing = JSON.parse(entry.pricing_tiers || '{}');
+  const pricing = typeof entry.pricing_tiers === 'string' ? JSON.parse(entry.pricing_tiers || '{}') : entry.pricing_tiers;
   const price = pricing[entry.seat_category] || 50;
   const isExpired = !entry.offer_expires_at || new Date(entry.offer_expires_at) <= new Date();
 
@@ -151,11 +150,11 @@ export function getWaitlistOffer(req, res) {
 /**
  * Customer claims waitlist seat offer to proceed directly to checkout
  */
-export function claimOffer(req, res) {
+export async function claimOffer(req, res) {
   const { id } = req.params;
   const userId = req.user.id;
 
-  const entry = db.prepare('SELECT * FROM waitlist_entries WHERE id = ?').get(id);
+  const entry = await db.get('SELECT * FROM waitlist_entries WHERE id = ?', [id]);
   if (!entry) {
     return res.status(404).json({ error: 'Waitlist entry not found.' });
   }
@@ -185,11 +184,11 @@ export function claimOffer(req, res) {
 /**
  * Customer declines waitlist seat offer -> immediately cascades to next in queue
  */
-export function declineOffer(req, res) {
+export async function declineOffer(req, res) {
   const { id } = req.params;
   const userId = req.user.id;
 
-  const entry = db.prepare('SELECT * FROM waitlist_entries WHERE id = ?').get(id);
+  const entry = await db.get('SELECT * FROM waitlist_entries WHERE id = ?', [id]);
   if (!entry) {
     return res.status(404).json({ error: 'Waitlist entry not found.' });
   }
@@ -198,21 +197,17 @@ export function declineOffer(req, res) {
     return res.status(403).json({ error: 'Unauthorized.' });
   }
 
-  const declineTx = db.transaction(() => {
-    db.prepare(`
+  try {
+    await db.query(`
       UPDATE waitlist_entries
       SET status = 'DECLINED', updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(id);
+    `, [id]);
 
     if (entry.offered_show_seat_id) {
-      // Instantly cascade to the next person in line!
-      reallocateSeatOrRelease(entry.offered_show_seat_id, db);
+      await reallocateSeatOrRelease(entry.offered_show_seat_id);
     }
-  });
 
-  try {
-    declineTx();
     res.json({
       success: true,
       message: 'Offer declined. The seat has been cascaded to the next person waiting in line.'
