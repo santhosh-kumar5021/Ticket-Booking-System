@@ -5,29 +5,13 @@ import db from '../db/connection.js';
 export function getMailTransporter() {
   const user = (process.env.SMTP_USER || 'kopurinirmalajyothi@gmail.com').replace(/"/g, '').trim();
   const pass = (process.env.SMTP_PASS || 'rqupqfddajqnpozq').replace(/"/g, '').trim();
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.SMTP_PORT || '465');
-
-  if (host.includes('gmail') || user.includes('@gmail.com')) {
-    return nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user, pass },
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 8000
-    });
-  }
 
   return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
+    service: 'gmail',
     auth: { user, pass },
-    connectionTimeout: 8000,
-    greetingTimeout: 8000,
-    socketTimeout: 8000
+    tls: {
+      rejectUnauthorized: false
+    }
   });
 }
 
