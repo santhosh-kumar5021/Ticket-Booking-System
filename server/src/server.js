@@ -1,6 +1,6 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import apiRoutes from './routes/api.js';
@@ -10,8 +10,6 @@ import { startHoldWorker, stopHoldWorker } from './services/holdWorker.js';
 
 import db from './db/connection.js';
 import { seedDatabase } from './db/seed.js';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

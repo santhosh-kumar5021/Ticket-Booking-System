@@ -5,31 +5,25 @@ import db from '../db/connection.js';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// Setup Nodemailer transporter if SMTP config is present
-let transporter = null;
-if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-  const isGmail = (process.env.SMTP_HOST && process.env.SMTP_HOST.includes('gmail')) ||
-                  (process.env.SMTP_USER && process.env.SMTP_USER.includes('@gmail.com'));
+function getMailTransporter() {
+  const user = (process.env.SMTP_USER || 'uppalavenkey01@gmail.com').replace(/"/g, '').trim();
+  const pass = (process.env.SMTP_PASS || 'qnhznxmbrccnoylj').replace(/"/g, '').trim();
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.SMTP_PORT || '465');
 
-  if (isGmail) {
-    transporter = nodemailer.createTransport({
+  if (host.includes('gmail') || user.includes('@gmail.com')) {
+    return nodemailer.createTransport({
       service: 'gmail',
-      auth: {
-        user: process.env.SMTP_USER.replace(/"/g, '').trim(),
-        pass: process.env.SMTP_PASS.replace(/"/g, '').trim()
-      }
-    });
-  } else {
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465',
-      auth: {
-        user: process.env.SMTP_USER.replace(/"/g, '').trim(),
-        pass: process.env.SMTP_PASS.replace(/"/g, '').trim()
-      }
+      auth: { user, pass }
     });
   }
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass }
+  });
 }
 
 /**
@@ -77,33 +71,33 @@ async function dispatchEmail({ to, toName, subject, type, html, qrCodeData, meta
         attachments
       });
       console.log(`[EmailService] Resend email sent to ${to} (${subject})`);
-    }
-    // 3. Fallback to SMTP (Gmail / custom SMTP)
-    else if (transporter) {
-      const attachments = [];
-      if (qrCodeData && qrCodeData.startsWith('data:image/png;base64,')) {
-        attachments.push({
-          filename: 'ticket-qr.png',
-          content: qrCodeData.split('base64,')[1],
-          encoding: 'base64',
-          cid: 'ticket_qr_code'
-        });
-      }
-
-      const fromAddress = process.env.SMTP_FROM
-        ? process.env.SMTP_FROM.replace(/"/g, '')
-        : `"TicketPass" <${process.env.SMTP_USER}>`;
-
-      await transporter.sendMail({
-        from: fromAddress,
-        to,
-        subject,
-        html,
-        attachments
-      });
-      console.log(`[EmailService] SMTP email delivered to ${to} (${subject})`);
     } else {
-      console.log(`[EmailService] No external SMTP configured; email logged in In-App Mailbox for ${to}`);
+      // 3. Fallback to Gmail SMTP with guaranteed transporter
+      const transporter = getMailTransporter();
+      if (transporter) {
+        const attachments = [];
+        if (qrCodeData && qrCodeData.startsWith('data:image/png;base64,')) {
+          attachments.push({
+            filename: 'ticket-qr.png',
+            content: qrCodeData.split('base64,')[1],
+            encoding: 'base64',
+            cid: 'ticket_qr_code'
+          });
+        }
+
+        const fromAddress = process.env.SMTP_FROM
+          ? process.env.SMTP_FROM.replace(/"/g, '')
+          : `"TicketPass" <${(process.env.SMTP_USER || 'uppalavenkey01@gmail.com').replace(/"/g, '').trim()}>`;
+
+        await transporter.sendMail({
+          from: fromAddress,
+          to,
+          subject,
+          html,
+          attachments
+        });
+        console.log(`[EmailService] SMTP email delivered to ${to} (${subject})`);
+      }
     }
 
     return { success: true, emailId };
