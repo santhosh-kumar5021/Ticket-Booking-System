@@ -14,7 +14,9 @@ import {
   ChevronDown,
   Shield,
   Clock,
-  Sparkles
+  Sparkles,
+  User,
+  Crown
 } from 'lucide-react';
 
 export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
@@ -55,7 +57,16 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
     tick();
     const timer = setInterval(tick, 1000);
     return () => clearInterval(timer);
-  }, [activeOffer]);
+  }, [activeOffer, clearOffer]);
+
+  const handleRoleSwitch = async (userId, targetPage) => {
+    try {
+      await switchUser(userId);
+      if (targetPage) onNavigate(targetPage);
+    } catch (err) {
+      console.error('Failed to switch role:', err);
+    }
+  };
 
   return (
     <>
@@ -88,6 +99,85 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
           </div>
         </div>
       )}
+
+      {/* Role Switcher Toolbar */}
+      <div style={{
+        background: 'rgba(15, 23, 42, 0.95)',
+        borderBottom: '1px solid rgba(99, 102, 241, 0.2)',
+        padding: '6px 24px',
+        fontSize: 12,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 12,
+        flexWrap: 'wrap'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#a5b4fc', fontWeight: 600 }}>
+          <Sparkles size={14} color="#fbbf24" />
+          <span>Switch Mode:</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={() => handleRoleSwitch('usr-cust-1', 'events')}
+            style={{
+              background: user?.id === 'usr-cust-1' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+              border: `1px solid ${user?.id === 'usr-cust-1' ? '#10b981' : 'rgba(255, 255, 255, 0.1)'}`,
+              color: user?.id === 'usr-cust-1' ? '#34d399' : 'var(--text-secondary)',
+              padding: '3px 10px',
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4
+            }}
+          >
+            <User size={12} />
+            <span>🎟️ Customer (Alex)</span>
+          </button>
+
+          <button
+            onClick={() => handleRoleSwitch('usr-org-1', 'organiser')}
+            style={{
+              background: user?.role === 'ORGANISER' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+              border: `1px solid ${user?.role === 'ORGANISER' ? '#6366f1' : 'rgba(255, 255, 255, 0.1)'}`,
+              color: user?.role === 'ORGANISER' ? '#a5b4fc' : 'var(--text-secondary)',
+              padding: '3px 10px',
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4
+            }}
+          >
+            <BarChart3 size={12} />
+            <span>🎭 Organiser Hub</span>
+          </button>
+
+          <button
+            onClick={() => handleRoleSwitch('usr-admin-1', 'admin')}
+            style={{
+              background: user?.role === 'ADMIN' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+              border: `1px solid ${user?.role === 'ADMIN' ? '#f59e0b' : 'rgba(255, 255, 255, 0.1)'}`,
+              color: user?.role === 'ADMIN' ? '#fbbf24' : 'var(--text-secondary)',
+              padding: '3px 10px',
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4
+            }}
+          >
+            <Crown size={12} />
+            <span>👑 Admin Venue Builder</span>
+          </button>
+        </div>
+      </div>
 
       {/* Main Navigation Bar */}
       <header className="navbar">
@@ -254,7 +344,7 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                   </div>
 
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '4px 10px', letterSpacing: 0.5 }}>
-                    Switch Demo Account:
+                    Switch Account:
                   </div>
 
                   <div style={{ maxHeight: 180, overflowY: 'auto' }}>
