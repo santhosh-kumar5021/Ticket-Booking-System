@@ -1,6 +1,6 @@
 export const API_BASE = import.meta.env.VITE_API_URL 
   ? `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api` 
-  : '/api';
+  : (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? '/api' : 'https://ticket-booking-system-jm84.onrender.com/api');
 
 function getAuthHeaders() {
   const token = localStorage.getItem('ticketpass_token');
