@@ -1,22 +1,12 @@
-import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db/connection.js';
 
-export function getMailTransporter() {
-  const user = (process.env.SMTP_USER || 'kopurinirmalajyothi@gmail.com').replace(/"/g, '').trim();
-  const pass = (process.env.SMTP_PASS || 'rqupqfddajqnpozq').replace(/"/g, '').trim();
-
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user, pass },
-    tls: {
-      rejectUnauthorized: false
-    }
-  });
-}
+const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').trim();
+const SENDER_EMAIL = (process.env.SENDER_EMAIL || process.env.SMTP_USER || 'kopurinirmalajyothi@gmail.com').trim();
+const SENDER_NAME = 'TicketPass';
 
 /**
- * Record email in DB for In-App Mailbox viewer & attempt SMTP send
+ * Record email in DB for In-App Mailbox & dispatch via Brevo HTTPS REST API (Port 443)
  */
 async function dispatchEmail({ to, toName, subject, type, html, qrCodeData, metadata }) {
   const emailId = `em-${uuidv4()}`;
@@ -42,34 +32,52 @@ async function dispatchEmail({ to, toName, subject, type, html, qrCodeData, meta
       console.warn('Could not insert to emails_log:', dbErr.message);
     }
 
-    // 2. Send external email via SMTP
-    const transporter = getMailTransporter();
-    if (transporter) {
-      const attachments = [];
-      if (qrCodeData && qrCodeData.startsWith('data:image/png;base64,')) {
-        attachments.push({
-          filename: 'ticket-qr.png',
-          content: qrCodeData.split('base64,')[1],
-          encoding: 'base64',
-          cid: 'ticket_qr_code'
-        });
-      }
-
-      const fromAddress = process.env.SMTP_FROM
-        ? process.env.SMTP_FROM.replace(/"/g, '')
-        : `"TicketPass" <${(process.env.SMTP_USER || 'kopurinirmalajyothi@gmail.com').replace(/"/g, '').trim()}>`;
-
-      await transporter.sendMail({
-        from: fromAddress,
-        to,
-        subject,
-        html,
-        attachments
+    // 2. Prepare attachments for Brevo (Base64)
+    const attachment = [];
+    if (qrCodeData && qrCodeData.startsWith('data:image/png;base64,')) {
+      attachment.push({
+        name: 'ticket-qr.png',
+        content: qrCodeData.split('base64,')[1]
       });
-      console.log(`[EmailService] SMTP email delivered to ${to} (${subject})`);
     }
 
-    return { success: true, emailId };
+    // 3. Send over HTTPS (Port 443 - 100% Cloud Firewall Friendly)
+    const payload = {
+      sender: {
+        name: SENDER_NAME,
+        email: SENDER_EMAIL
+      },
+      to: [
+        {
+          email: to,
+          name: toName || to
+        }
+      ],
+      subject,
+      htmlContent: html
+    };
+
+    if (attachment.length > 0) {
+      payload.attachment = attachment;
+    }
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const resData = await response.json();
+    if (!response.ok) {
+      throw new Error(resData.message || `Brevo HTTP API returned status ${response.status}`);
+    }
+
+    console.log(`[EmailService] Brevo HTTP email delivered to ${to} (${subject}) - MessageId: ${resData.messageId}`);
+    return { success: true, emailId, messageId: resData.messageId };
   } catch (err) {
     console.error(`[EmailService] Dispatch error for [${type}] to ${to}:`, err.message);
     return { success: false, error: err.message, emailId };
@@ -308,18 +316,35 @@ export async function sendWaitlistExpiredNotice({ user, show, event, category })
  * Direct test email sender for immediate verification
  */
 export async function sendDirectTestEmail({ to, subject, message }) {
-  const transporter = getMailTransporter();
-  const user = (process.env.SMTP_USER || 'kopurinirmalajyothi@gmail.com').replace(/"/g, '').trim();
-  const fromAddress = process.env.SMTP_FROM
-    ? process.env.SMTP_FROM.replace(/"/g, '')
-    : `"TicketPass" <${user}>`;
-
-  const info = await transporter.sendMail({
-    from: fromAddress,
-    to: to || user,
+  const payload = {
+    sender: {
+      name: SENDER_NAME,
+      email: SENDER_EMAIL
+    },
+    to: [
+      {
+        email: to || SENDER_EMAIL,
+        name: 'Customer'
+      }
+    ],
     subject: subject || 'TicketPass Live Test Email',
-    text: message || 'This is a live test email from Ticket Booking System.'
+    htmlContent: `<p>${message || 'This is a live test email from Ticket Booking System.'}</p>`
+  };
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': BREVO_API_KEY,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify(payload)
   });
 
-  return info;
+  const resData = await response.json();
+  if (!response.ok) {
+    throw new Error(resData.message || `Brevo HTTP API returned status ${response.status}`);
+  }
+
+  return { messageId: resData.messageId, response: '250 OK via Brevo HTTPS API' };
 }
