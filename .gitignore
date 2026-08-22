@@ -1,0 +1,24 @@
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+!.env.example
+!server/.env.example
+
+# SQLite databases & temp files
+*.db
+*.db*
+*.sqlite
+*.sqlite*
+data/
+server/data/
+
+# IDEs
+.vscode/
+.idea/

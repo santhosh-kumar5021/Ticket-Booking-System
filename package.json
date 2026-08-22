@@ -1,0 +1,30 @@
+{
+  "name": "ticket-booking-platform",
+  "version": "1.0.0",
+  "description": "Event-agnostic full-stack ticket booking platform with real-time seat holds, concurrency control, waitlist cascade, and QR tickets",
+  "scripts": {
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "start": "cd server && npm start",
+    "build": "cd client && npm run build",
+    "test:concurrency": "cd server && npm run test:concurrency",
+    "seed": "cd server && npm run seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "keywords": [
+    "ticket-booking",
+    "concurrency",
+    "waitlist",
+    "qr-ticket",
+    "realtime-seatmap",
+    "express",
+    "react",
+    "sqlite"
+  ],
+  "author": "Antigravity Engineering",
+  "license": "MIT"
+}

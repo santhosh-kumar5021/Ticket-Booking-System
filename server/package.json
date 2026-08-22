@@ -1,0 +1,28 @@
+{
+  "name": "ticket-booking-server",
+  "version": "1.0.0",
+  "description": "Backend API for Ticket Booking Platform with Atomic Concurrency & Waitlist Cascade",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node src/db/seed.js",
+    "test:concurrency": "node tests/concurrency.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.10.0",
+    "qrcode": "^1.5.4",
+    "resend": "^6.22.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
