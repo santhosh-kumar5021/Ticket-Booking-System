@@ -218,15 +218,14 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  padding: '6px 12px',
-                  borderColor: user.role === 'ADMIN' ? 'rgba(245, 158, 11, 0.4)' : user.role === 'ORGANISER' ? 'rgba(99, 102, 241, 0.4)' : 'rgba(255,255,255,0.1)'
+                  padding: '6px 12px'
                 }}
               >
                 <div style={{
                   width: 24,
                   height: 24,
                   borderRadius: '50%',
-                  background: user.role === 'ADMIN' ? '#d97706' : user.role === 'ORGANISER' ? '#6366f1' : '#10b981',
+                  background: 'rgba(255,255,255,0.1)',
                   color: '#fff',
                   fontSize: 11,
                   fontWeight: 800,
@@ -238,7 +237,6 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                 </div>
                 <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{user.name.split(' ')[0]}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{user.role}</div>
                 </div>
                 <ChevronDown size={14} color="var(--text-secondary)" />
               </button>

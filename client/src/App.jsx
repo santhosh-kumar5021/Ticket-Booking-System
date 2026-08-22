@@ -16,12 +16,20 @@ import { MailboxPage } from './pages/MailboxPage';
 
 function AppContent() {
   const { user, isOrganiser, isAdmin } = useAuth();
-  const [currentPage, setCurrentPage] = useState('events');
+  const getInitialPage = () => {
+    const path = window.location.pathname.replace('/', '');
+    if (path && ['events', 'my-bookings', 'my-waitlist', 'organiser', 'admin', 'scanner', 'mailbox'].includes(path)) {
+      return path;
+    }
+    return 'events';
+  };
+
+  const [currentPage, setCurrentPage] = useState(getInitialPage());
   const [selectedShowId, setSelectedShowId] = useState(null);
   const [claimOfferData, setClaimOfferData] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Automatically adjust view when role changes
+  // Automatically adjust view when role changes ONLY if they are on a restricted page or default
   useEffect(() => {
     if (user) {
       if (user.role === 'ADMIN' && (currentPage === 'events' || currentPage === 'my-bookings' || currentPage === 'my-waitlist')) {
@@ -30,7 +38,8 @@ function AppContent() {
         setCurrentPage('organiser');
       }
     }
-  }, [user?.role]);
+  }, [user?.role]); // only run when role changes, not on every page navigation
+
 
   const handleNavigate = (page, data = null) => {
     if (page === 'show-booking' && data?.showId) {
@@ -39,6 +48,7 @@ function AppContent() {
       setClaimOfferData(data);
     }
     setCurrentPage(page);
+    window.history.pushState({}, '', `/${page}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
