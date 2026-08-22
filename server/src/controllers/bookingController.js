@@ -72,11 +72,25 @@ export async function confirmBooking(req, res) {
 
     const recipientEmail = (deliveryEmail && deliveryEmail.trim()) || user.email;
 
+    // Generate signed cryptographic QR code before insertion so qr_code_data constraint is met
+    const qrCodeData = await generateSignedQRCode({
+      bookingReference,
+      bookingId,
+      showId,
+      eventTitle: show.event_title,
+      venueName: show.venue_name,
+      customerName: user.name,
+      customerEmail: recipientEmail,
+      seats: confirmedSeats.map(s => `${s.row_label}-${s.seat_number} (${s.default_category})`),
+      totalAmount,
+      showTime: show.start_time
+    });
+
     // Atomic transaction: Insert booking
     await db.query(`
-      INSERT INTO bookings (id, user_id, show_id, booking_reference, total_amount, status)
-      VALUES (?, ?, ?, ?, ?, 'CONFIRMED')
-    `, [bookingId, user.id, showId, bookingReference, totalAmount]);
+      INSERT INTO bookings (id, user_id, show_id, booking_reference, total_amount, status, qr_code_data)
+      VALUES (?, ?, ?, ?, ?, 'CONFIRMED', ?)
+    `, [bookingId, user.id, showId, bookingReference, totalAmount, qrCodeData]);
 
     // Insert booking_seats & lock show_seats to BOOKED
     for (const seat of confirmedSeats) {
@@ -103,22 +117,6 @@ export async function confirmBooking(req, res) {
       SET status = 'ACCEPTED', updated_at = CURRENT_TIMESTAMP
       WHERE user_id = ? AND show_id = ? AND status = 'OFFERED'
     `, [user.id, showId]);
-
-    // Generate signed cryptographic QR code
-    const qrCodeData = await generateSignedQRCode({
-      bookingReference,
-      bookingId,
-      showId,
-      eventTitle: show.event_title,
-      venueName: show.venue_name,
-      customerName: user.name,
-      customerEmail: recipientEmail,
-      seats: confirmedSeats.map(s => `${s.row_label}-${s.seat_number} (${s.default_category})`),
-      totalAmount,
-      showTime: show.start_time
-    });
-
-    await db.query('UPDATE bookings SET qr_code_data = ? WHERE id = ?', [qrCodeData, bookingId]);
 
     broadcastSeatUpdate(showId, {
       updatedSeats: showSeatIds.map(id => ({ id, status: 'BOOKED', heldBy: null })),
