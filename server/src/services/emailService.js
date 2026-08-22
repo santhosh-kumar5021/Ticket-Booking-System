@@ -26,19 +26,20 @@ async function dispatchEmail({ to, toName, subject, type, html, qrCodeData, meta
   const emailId = `em-${uuidv4()}`;
 
   try {
-    // 1. Always record in SQLite emails_log for immediate In-App Mailbox inspection
-    db.prepare(`
-      INSERT INTO emails_log (id, recipient_email, recipient_name, subject, type, html_body, qr_code_data, metadata)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      emailId,
-      to,
-      toName || to,
-      subject,
-      type,
-      html,
-      qrCodeData || null,
-      metadata ? JSON.stringify(metadata) : null
+    // 1. Always record in Supabase emails_log for immediate In-App Mailbox inspection
+    await db.run(
+      `INSERT INTO emails_log (id, recipient_email, recipient_name, subject, type, html_body, qr_code_data, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        emailId,
+        to,
+        toName || to,
+        subject,
+        type,
+        html,
+        qrCodeData || null,
+        metadata ? JSON.stringify(metadata) : null
+      ]
     );
 
     // 2. If Resend is configured, send actual external email via Resend
