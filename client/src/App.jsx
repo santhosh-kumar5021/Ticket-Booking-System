@@ -82,12 +82,14 @@ function AppContent() {
           <OrganiserDashboard
             onOpenScanner={() => handleNavigate('scanner')}
             onSelectShow={(showId) => handleNavigate('show-booking', { showId })}
+            onOpenAuthModal={() => setShowAuthModal(true)}
           />
         )}
 
         {currentPage === 'admin' && (
           <AdminLayoutBuilder
             onDone={() => handleNavigate('organiser')}
+            onOpenAuthModal={() => setShowAuthModal(true)}
           />
         )}
 

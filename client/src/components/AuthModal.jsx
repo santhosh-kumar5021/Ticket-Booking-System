@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { UserCheck, LogIn, UserPlus, X, AlertCircle, Sparkles, Shield, User } from 'lucide-react';
+import { UserCheck, LogIn, UserPlus, X, AlertCircle, Shield, User, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export function AuthModal({ onClose, onSuccess }) {
   const { login, register, switchUser, demoUsers } = useAuth();
   const { showToast } = useNotification();
-  const [isRegister, setIsRegister] = useState(false);
+  const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register' | 'demo'
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -22,32 +22,33 @@ export function AuthModal({ onClose, onSuccess }) {
     setError(null);
 
     try {
-      if (isRegister) {
+      if (activeTab === 'register') {
         await register(formData);
-        showToast('Account created successfully!', 'success');
+        showToast('Account created successfully', 'success');
       } else {
         await login(formData.email, formData.password);
-        showToast('Welcome back!', 'success');
+        showToast('Signed in successfully', 'success');
       }
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
       console.error('Auth error:', err);
-      setError(err.message || 'Authentication failed');
+      setError(err.message || 'Authentication failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleQuickDemoLogin = async (userId) => {
+  const handleDemoSelect = async (userId) => {
     setIsLoading(true);
+    setError(null);
     try {
       await switchUser(userId);
-      showToast('Logged in as demo user', 'success');
+      showToast('Signed in successfully', 'success');
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
-      setError(err.message || 'Demo login failed');
+      setError('Unable to authenticate demo account. Please try again in a few moments.');
     } finally {
       setIsLoading(false);
     }
@@ -59,10 +60,10 @@ export function AuthModal({ onClose, onSuccess }) {
         className="modal-content"
         onClick={e => e.stopPropagation()}
         style={{
-          maxWidth: 480,
+          maxWidth: 460,
           background: '#111827',
-          border: '1px solid rgba(99, 102, 241, 0.3)',
-          boxShadow: '0 25px 50px rgba(0,0,0,0.85), 0 0 30px rgba(99, 102, 241, 0.2)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.9)',
           borderRadius: 16
         }}
       >
@@ -74,75 +75,90 @@ export function AuthModal({ onClose, onSuccess }) {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {isRegister ? <UserPlus size={18} color="#818cf8" /> : <LogIn size={18} color="#818cf8" />}
-            </div>
-            <div>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>
-                {isRegister ? 'Create TicketPass Account' : 'Welcome to TicketPass'}
-              </h3>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                {isRegister ? 'Register as Customer or Organiser' : 'Sign in to manage and book tickets'}
-              </div>
-            </div>
+          <div>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: 0 }}>
+              {activeTab === 'register' ? 'Create Account' : activeTab === 'demo' ? 'Quick Demo Profiles' : 'Welcome to TicketPass'}
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+              {activeTab === 'register' ? 'Register as Customer or Organiser' : activeTab === 'demo' ? 'Select a pre-configured profile for evaluation' : 'Sign in to access your bookings and tickets'}
+            </p>
           </div>
-          <button onClick={onClose} className="btn btn-ghost" style={{ padding: 6 }}>
-            <X size={18} color="var(--text-secondary)" />
+          <button onClick={onClose} className="btn btn-ghost" style={{ padding: 6, color: 'var(--text-secondary)' }}>
+            <X size={18} />
           </button>
         </div>
 
-        {/* Content */}
-        <div style={{ padding: 24 }}>
-          {/* Quick 1-Click Demo User Switcher */}
-          {!isRegister && (
-            <div style={{
-              background: 'rgba(99, 102, 241, 0.1)',
-              border: '1px solid rgba(99, 102, 241, 0.25)',
-              borderRadius: 12,
-              padding: 14,
-              marginBottom: 20
-            }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#a5b4fc', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={14} color="#fbbf24" />
-                <span>Quick 1-Click Demo Login:</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('usr-cust-1')}
-                  className="btn btn-outline"
-                  style={{ padding: '8px 6px', fontSize: 11, fontWeight: 700, borderColor: 'rgba(16,185,129,0.3)', color: '#34d399', textAlign: 'center', flexDirection: 'column' }}
-                >
-                  <span>🎟️ Customer</span>
-                  <span style={{ fontSize: 9, opacity: 0.7 }}>Alex Johnson</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('usr-org-1')}
-                  className="btn btn-outline"
-                  style={{ padding: '8px 6px', fontSize: 11, fontWeight: 700, borderColor: 'rgba(99,102,241,0.4)', color: '#a5b4fc', textAlign: 'center', flexDirection: 'column' }}
-                >
-                  <span>🎭 Organiser</span>
-                  <span style={{ fontSize: 9, opacity: 0.7 }}>Starlight Cinema</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin('usr-admin-1')}
-                  className="btn btn-outline"
-                  style={{ padding: '8px 6px', fontSize: 11, fontWeight: 700, borderColor: 'rgba(251,191,36,0.4)', color: '#fbbf24', textAlign: 'center', flexDirection: 'column' }}
-                >
-                  <span>👑 Admin</span>
-                  <span style={{ fontSize: 9, opacity: 0.7 }}>System Admin</span>
-                </button>
-              </div>
-            </div>
-          )}
+        {/* Tab Switcher */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          background: 'rgba(255, 255, 255, 0.03)',
+          borderBottom: '1px solid var(--border-subtle)',
+          padding: '4px 20px'
+        }}>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('login'); setError(null); }}
+            style={{
+              padding: '10px 0',
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'login' ? '2px solid #818cf8' : '2px solid transparent',
+              color: activeTab === 'login' ? '#fff' : 'var(--text-secondary)',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('register'); setError(null); }}
+            style={{
+              padding: '10px 0',
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'register' ? '2px solid #818cf8' : '2px solid transparent',
+              color: activeTab === 'register' ? '#fff' : 'var(--text-secondary)',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            Register
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('demo'); setError(null); }}
+            style={{
+              padding: '10px 0',
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'demo' ? '2px solid #fbbf24' : '2px solid transparent',
+              color: activeTab === 'demo' ? '#fbbf24' : 'var(--text-secondary)',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4
+            }}
+          >
+            <span>Demo Profiles</span>
+          </button>
+        </div>
 
+        {/* Modal Body */}
+        <div style={{ padding: 24 }}>
           {error && (
             <div style={{
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid #ef4444',
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 8,
               padding: '10px 14px',
               marginBottom: 16,
@@ -157,81 +173,171 @@ export function AuthModal({ onClose, onSuccess }) {
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            {isRegister && (
-              <>
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    className="form-input"
-                    placeholder="e.g. Sarah Connor"
-                    value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  />
+          {/* Tab: Demo Accounts */}
+          {activeTab === 'demo' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                Choose a role profile to test its features:
+              </div>
+
+              {/* Customer Profile */}
+              <button
+                type="button"
+                onClick={() => handleDemoSelect('usr-cust-1')}
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '12px 14px',
+                  background: 'rgba(16, 185, 129, 0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#34d399', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>Alex Johnson</span>
+                    <span className="badge badge-emerald" style={{ fontSize: 10 }}>Customer</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                    Book tickets, hold seats, join category waitlist
+                  </div>
                 </div>
+                <div style={{ fontSize: 12, color: '#34d399', fontWeight: 700 }}>Select →</div>
+              </button>
 
-                <div className="form-group">
-                  <label className="form-label">Account Role</label>
-                  <select
-                    className="form-select"
-                    value={formData.role}
-                    onChange={e => setFormData({ ...formData, role: e.target.value })}
-                  >
-                    <option value="CUSTOMER">Customer (Book & hold tickets)</option>
-                    <option value="ORGANISER">Organiser (Create events & shows)</option>
-                  </select>
+              {/* Organiser Profile */}
+              <button
+                type="button"
+                onClick={() => handleDemoSelect('usr-org-1')}
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '12px 14px',
+                  background: 'rgba(99, 102, 241, 0.08)',
+                  border: '1px solid rgba(99, 102, 241, 0.25)',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>Starlight Cinema</span>
+                    <span className="badge badge-primary" style={{ fontSize: 10 }}>Organiser</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                    Create events, schedule shows, view revenue
+                  </div>
                 </div>
-              </>
-            )}
+                <div style={{ fontSize: 12, color: '#a5b4fc', fontWeight: 700 }}>Select →</div>
+              </button>
 
-            <div className="form-group">
-              <label className="form-label">Email Address</label>
-              <input
-                type="email"
-                required
-                className="form-input"
-                placeholder="name@example.com"
-                value={formData.email}
-                onChange={e => setFormData({ ...formData, email: e.target.value })}
-              />
+              {/* Admin Profile */}
+              <button
+                type="button"
+                onClick={() => handleDemoSelect('usr-admin-1')}
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '12px 14px',
+                  background: 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>System Administrator</span>
+                    <span className="badge badge-gold" style={{ fontSize: 10 }}>Admin</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                    Design venue seat layouts, manage categories
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: '#fbbf24', fontWeight: 700 }}>Select →</div>
+              </button>
             </div>
+          ) : (
+            /* Tab: Login / Register Form */
+            <form onSubmit={handleSubmit}>
+              {activeTab === 'register' && (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      placeholder="e.g. Sarah Connor"
+                      value={formData.name}
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
 
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <input
-                type="password"
-                required
-                className="form-input"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={e => setFormData({ ...formData, password: e.target.value })}
-              />
-            </div>
+                  <div className="form-group">
+                    <label className="form-label">Account Role</label>
+                    <select
+                      className="form-select"
+                      value={formData.role}
+                      onChange={e => setFormData({ ...formData, role: e.target.value })}
+                    >
+                      <option value="CUSTOMER">Customer (Book and hold tickets)</option>
+                      <option value="ORGANISER">Organiser (Publish events and shows)</option>
+                    </select>
+                  </div>
+                </>
+              )}
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn btn-primary"
-              style={{ width: '100%', padding: '12px', fontSize: 14, fontWeight: 700, marginTop: 6 }}
-            >
-              {isLoading ? 'Processing...' : isRegister ? 'Create Account' : 'Sign In'}
-            </button>
-          </form>
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  className="form-input"
+                  placeholder="name@example.com"
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
 
-          <div style={{ textAlign: 'center', marginTop: 16 }}>
-            <button
-              type="button"
-              onClick={() => {
-                setIsRegister(!isRegister);
-                setError(null);
-              }}
-              style={{ background: 'transparent', border: 'none', color: '#a5b4fc', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}
-            >
-              {isRegister ? 'Already have an account? Sign In' : "Don't have an account? Register"}
-            </button>
-          </div>
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <input
+                  type="password"
+                  required
+                  className="form-input"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={e => setFormData({ ...formData, password: e.target.value })}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn btn-primary"
+                style={{ width: '100%', padding: '12px', fontSize: 14, fontWeight: 700, marginTop: 8 }}
+              >
+                {isLoading ? 'Authenticating...' : activeTab === 'register' ? 'Create Account' : 'Sign In'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>

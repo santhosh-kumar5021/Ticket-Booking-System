@@ -18,7 +18,7 @@ import {
   QrCode
 } from 'lucide-react';
 
-export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
+export function OrganiserDashboard({ onOpenScanner, onSelectShow, onOpenAuthModal }) {
   const { user, isOrganiser } = useAuth();
   const { showToast } = useNotification();
   const [analytics, setAnalytics] = useState(null);
@@ -131,27 +131,26 @@ export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
     }
   };
 
-  // Auth guard
+  // Professional Auth guard
   if (!user || !isOrganiser) {
     return (
-      <div style={{ maxWidth: 600, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
-        <div className="glass-card" style={{ padding: 48, border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🎭</div>
-          <h2 style={{ fontSize: 24, fontWeight: 900, color: '#a5b4fc', marginBottom: 8 }}>Organiser Access Required</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
-            The Organiser Hub is only accessible to <strong style={{ color: '#a5b4fc' }}>Organiser</strong> or <strong style={{ color: '#fbbf24' }}>Admin</strong> accounts.
-            Use the role switcher bar at the top to switch roles.
+      <div style={{ maxWidth: 560, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
+        <div className="glass-card" style={{ padding: '40px 32px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(99, 102, 241, 0.15)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+            <BarChart3 size={28} color="#818cf8" />
+          </div>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Organiser Authorization Required</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
+            The Organiser Control Center is reserved for verified event organisers to publish listings, schedule shows, and track live ticket revenue.
           </p>
-          <div style={{
-            background: 'rgba(99, 102, 241, 0.1)',
-            border: '1px solid rgba(99, 102, 241, 0.3)',
-            borderRadius: 10,
-            padding: '12px 18px',
-            fontSize: 13,
-            color: '#a5b4fc',
-            marginBottom: 10
-          }}>
-            <strong>🎭 Organiser:</strong> cinema@starlight.com &nbsp;/&nbsp; Password@123
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+            <button
+              onClick={onOpenAuthModal}
+              className="btn btn-primary"
+              style={{ padding: '10px 24px', fontSize: 14, fontWeight: 700 }}
+            >
+              Sign In as Event Organiser
+            </button>
           </div>
         </div>
       </div>
@@ -174,8 +173,8 @@ export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 32 }}>
         <div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: 'var(--bg-secondary)', borderRadius: 20, color: 'var(--accent-primary)', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', marginBottom: 8 }}>
-            <Sparkles size={14} /> Organiser Control Center
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.25)', borderRadius: 20, color: '#a5b4fc', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
+            <BarChart3 size={13} /> Event Management & Revenue Intelligence
           </div>
           <h1 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-primary)', margin: 0 }}>
             Revenue & Show Analytics

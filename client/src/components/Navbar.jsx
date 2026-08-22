@@ -12,12 +12,8 @@ import {
   UserCheck,
   LogOut,
   ChevronDown,
-  Shield,
   Clock,
-  Sparkles,
-  User,
-  Crown,
-  Loader
+  User
 } from 'lucide-react';
 
 export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
@@ -60,24 +56,6 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
     return () => clearInterval(timer);
   }, [activeOffer, clearOffer]);
 
-  const [isSwitching, setIsSwitching] = useState(false);
-  const [switchError, setSwitchError] = useState(null);
-
-  const handleRoleSwitch = async (userId, targetPage) => {
-    setSwitchError(null);
-    setIsSwitching(userId);
-    try {
-      await switchUser(userId);
-      if (targetPage) onNavigate(targetPage);
-    } catch (err) {
-      console.error('Failed to switch role:', err);
-      setSwitchError('Backend is waking up… please try again in 10 seconds.');
-      setTimeout(() => setSwitchError(null), 8000);
-    } finally {
-      setIsSwitching(false);
-    }
-  };
-
   return (
     <>
       {/* Top Banner when a Waitlist Offer is Active */}
@@ -110,114 +88,13 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
         </div>
       )}
 
-      {/* Role Switcher Toolbar */}
-      {switchError && (
-        <div style={{
-          background: 'rgba(245, 158, 11, 0.15)',
-          borderBottom: '1px solid rgba(245, 158, 11, 0.4)',
-          padding: '8px 24px',
-          fontSize: 12,
-          fontWeight: 600,
-          color: '#fbbf24',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8
-        }}>
-          <Loader size={13} style={{ animation: 'spin 1s linear infinite' }} />
-          ⚠️ {switchError}
-        </div>
-      )}
-      <div style={{
-        background: 'rgba(15, 23, 42, 0.95)',
-        borderBottom: '1px solid rgba(99, 102, 241, 0.2)',
-        padding: '6px 24px',
-        fontSize: 12,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 12,
-        flexWrap: 'wrap'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#a5b4fc', fontWeight: 600 }}>
-          <Sparkles size={14} color="#fbbf24" />
-          <span>Switch Mode:</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            onClick={() => handleRoleSwitch('usr-cust-1', 'events')}
-            disabled={!!isSwitching}
-            style={{
-              background: user?.id === 'usr-cust-1' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-              border: `1px solid ${user?.id === 'usr-cust-1' ? '#10b981' : 'rgba(255, 255, 255, 0.1)'}`,
-              color: user?.id === 'usr-cust-1' ? '#34d399' : 'var(--text-secondary)',
-              padding: '3px 10px',
-              borderRadius: 6,
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: isSwitching ? 'wait' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              opacity: isSwitching && isSwitching !== 'usr-cust-1' ? 0.5 : 1
-            }}
-          >
-            {isSwitching === 'usr-cust-1' ? <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <User size={12} />}
-            <span>🎟️ Customer (Alex)</span>
-          </button>
-
-          <button
-            onClick={() => handleRoleSwitch('usr-org-1', 'organiser')}
-            disabled={!!isSwitching}
-            style={{
-              background: user?.role === 'ORGANISER' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-              border: `1px solid ${user?.role === 'ORGANISER' ? '#6366f1' : 'rgba(255, 255, 255, 0.1)'}`,
-              color: user?.role === 'ORGANISER' ? '#a5b4fc' : 'var(--text-secondary)',
-              padding: '3px 10px',
-              borderRadius: 6,
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: isSwitching ? 'wait' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              opacity: isSwitching && isSwitching !== 'usr-org-1' ? 0.5 : 1
-            }}
-          >
-            {isSwitching === 'usr-org-1' ? <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <BarChart3 size={12} />}
-            <span>🎭 Organiser Hub</span>
-          </button>
-
-          <button
-            onClick={() => handleRoleSwitch('usr-admin-1', 'admin')}
-            disabled={!!isSwitching}
-            style={{
-              background: user?.role === 'ADMIN' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-              border: `1px solid ${user?.role === 'ADMIN' ? '#f59e0b' : 'rgba(255, 255, 255, 0.1)'}`,
-              color: user?.role === 'ADMIN' ? '#fbbf24' : 'var(--text-secondary)',
-              padding: '3px 10px',
-              borderRadius: 6,
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: isSwitching ? 'wait' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              opacity: isSwitching && isSwitching !== 'usr-admin-1' ? 0.5 : 1
-            }}
-          >
-            {isSwitching === 'usr-admin-1' ? <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Crown size={12} />}
-            <span>👑 Admin Venue Builder</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Navigation Bar */}
+      {/* Clean Main Navigation Bar */}
       <header className="navbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-          {/* Logo */}
+          {/* Brand Logo */}
           <div className="nav-brand" style={{ cursor: 'pointer' }} onClick={() => onNavigate('events')}>
             <div className="nav-brand-icon">
-              <Ticket size={22} color="#ffffff" />
+              <Ticket size={20} color="#ffffff" />
             </div>
             <span>Ticket<span style={{ color: '#818cf8' }}>Pass</span></span>
           </div>
@@ -228,8 +105,8 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
               onClick={() => onNavigate('events')}
               className={`nav-link ${currentPage === 'events' ? 'active' : ''}`}
             >
-              <Calendar size={16} />
-              Events
+              <Calendar size={15} />
+              <span>Events</span>
             </button>
 
             {user && (
@@ -238,16 +115,16 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                   onClick={() => onNavigate('my-bookings')}
                   className={`nav-link ${currentPage === 'my-bookings' ? 'active' : ''}`}
                 >
-                  <Ticket size={16} />
-                  My Tickets
+                  <Ticket size={15} />
+                  <span>My Tickets</span>
                 </button>
 
                 <button
                   onClick={() => onNavigate('my-waitlist')}
                   className={`nav-link ${currentPage === 'my-waitlist' ? 'active' : ''}`}
                 >
-                  <Clock size={16} />
-                  Waitlist
+                  <Clock size={15} />
+                  <span>Waitlist</span>
                 </button>
               </>
             )}
@@ -257,8 +134,8 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                 onClick={() => onNavigate('organiser')}
                 className={`nav-link ${currentPage === 'organiser' ? 'active' : ''}`}
               >
-                <BarChart3 size={16} />
-                Organiser Hub
+                <BarChart3 size={15} />
+                <span>Organiser Hub</span>
               </button>
             )}
 
@@ -267,8 +144,8 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                 onClick={() => onNavigate('admin')}
                 className={`nav-link ${currentPage === 'admin' ? 'active' : ''}`}
               >
-                <Layers size={16} />
-                Venue Builder
+                <Layers size={15} />
+                <span>Venue Builder</span>
               </button>
             )}
 
@@ -276,28 +153,28 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
               onClick={() => onNavigate('scanner')}
               className={`nav-link ${currentPage === 'scanner' ? 'active' : ''}`}
             >
-              <QrCode size={16} />
-              Gate Scanner
+              <QrCode size={15} />
+              <span>Gate Scanner</span>
             </button>
           </nav>
         </div>
 
-        {/* Right side utilities & User switch */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* In-App Mailbox Quick Button */}
+        {/* Right side Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* In-App Mailbox */}
           <button
             onClick={() => onNavigate('mailbox')}
             className={`btn ${currentPage === 'mailbox' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ padding: '7px 12px', fontSize: 13, position: 'relative' }}
+            style={{ padding: '7px 14px', fontSize: 13, position: 'relative' }}
             title="View In-App Emails & QR Code tickets"
           >
-            <Mail size={16} />
+            <Mail size={15} />
             <span>Mailbox</span>
             {emailCount > 0 && (
               <span style={{
                 position: 'absolute',
-                top: -6,
-                right: -6,
+                top: -5,
+                right: -5,
                 background: '#ef4444',
                 color: '#fff',
                 borderRadius: '50%',
@@ -307,15 +184,14 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                 fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)'
+                justifyContent: 'center'
               }}>
                 {emailCount}
               </span>
             )}
           </button>
 
-          {/* User Profile / Quick Switcher */}
+          {/* User Profile / Auth Button */}
           {user ? (
             <div style={{ position: 'relative' }}>
               <button
@@ -325,8 +201,8 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  padding: '6px 14px',
-                  borderColor: user.role === 'ADMIN' ? '#fbbf24' : user.role === 'ORGANISER' ? '#8b5cf6' : 'rgba(255,255,255,0.1)'
+                  padding: '6px 12px',
+                  borderColor: user.role === 'ADMIN' ? 'rgba(245, 158, 11, 0.4)' : user.role === 'ORGANISER' ? 'rgba(99, 102, 241, 0.4)' : 'rgba(255,255,255,0.1)'
                 }}
               >
                 <div style={{
@@ -343,14 +219,14 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                 }}>
                   {user.name.charAt(0)}
                 </div>
-                <div style={{ textAlign: 'left', lineHeight: 1.1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>{user.name.split(' ')[0]}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{user.role}</div>
+                <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{user.name.split(' ')[0]}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{user.role}</div>
                 </div>
                 <ChevronDown size={14} color="var(--text-secondary)" />
               </button>
 
-              {/* User Menu & 1-Click Role Switcher */}
+              {/* User Dropdown Menu */}
               {showUserMenu && (
                 <div
                   className="glass-card"
@@ -358,10 +234,10 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                     position: 'absolute',
                     top: 'calc(100% + 8px)',
                     right: 0,
-                    width: 280,
+                    width: 260,
                     padding: '12px',
                     zIndex: 100,
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.7)',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.8)',
                     border: '1px solid rgba(255,255,255,0.12)'
                   }}
                 >
@@ -376,21 +252,24 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                   </div>
 
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '4px 10px', letterSpacing: 0.5 }}>
-                    Switch Account:
+                    Switch Account Profile:
                   </div>
 
                   <div style={{ maxHeight: 180, overflowY: 'auto' }}>
                     {demoUsers.map(du => (
                       <button
                         key={du.id}
-                        onClick={() => {
-                          switchUser(du.id);
+                        onClick={async () => {
+                          await switchUser(du.id);
                           setShowUserMenu(false);
+                          if (du.role === 'ADMIN') onNavigate('admin');
+                          else if (du.role === 'ORGANISER') onNavigate('organiser');
+                          else onNavigate('events');
                         }}
                         style={{
                           width: '100%',
                           textAlign: 'left',
-                          padding: '6px 10px',
+                          padding: '7px 10px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
@@ -414,12 +293,13 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
                       onClick={() => {
                         logout();
                         setShowUserMenu(false);
+                        onNavigate('events');
                       }}
                       className="btn btn-ghost"
                       style={{ width: '100%', justifyContent: 'flex-start', color: '#ef4444', padding: '6px 10px', fontSize: 12 }}
                     >
                       <LogOut size={14} />
-                      Log Out
+                      <span>Sign Out</span>
                     </button>
                   </div>
                 </div>
@@ -427,8 +307,8 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
             </div>
           ) : (
             <button onClick={onOpenAuthModal} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 13 }}>
-              <UserCheck size={16} />
-              Sign In / Register
+              <UserCheck size={15} />
+              <span>Sign In</span>
             </button>
           )}
         </div>
