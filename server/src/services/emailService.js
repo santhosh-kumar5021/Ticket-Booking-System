@@ -8,15 +8,28 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 // Setup Nodemailer transporter if SMTP config is present
 let transporter = null;
 if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_PORT === '465',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
-  });
+  const isGmail = (process.env.SMTP_HOST && process.env.SMTP_HOST.includes('gmail')) ||
+                  (process.env.SMTP_USER && process.env.SMTP_USER.includes('@gmail.com'));
+
+  if (isGmail) {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_USER.replace(/"/g, '').trim(),
+        pass: process.env.SMTP_PASS.replace(/"/g, '').trim()
+      }
+    });
+  } else {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_PORT === '465',
+      auth: {
+        user: process.env.SMTP_USER.replace(/"/g, '').trim(),
+        pass: process.env.SMTP_PASS.replace(/"/g, '').trim()
+      }
+    });
+  }
 }
 
 /**
@@ -27,20 +40,24 @@ async function dispatchEmail({ to, toName, subject, type, html, qrCodeData, meta
 
   try {
     // 1. Always record in Supabase emails_log for immediate In-App Mailbox inspection
-    await db.run(
-      `INSERT INTO emails_log (id, recipient_email, recipient_name, subject, type, html_body, qr_code_data, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [
-        emailId,
-        to,
-        toName || to,
-        subject,
-        type,
-        html,
-        qrCodeData || null,
-        metadata ? JSON.stringify(metadata) : null
-      ]
-    );
+    try {
+      await db.run(
+        `INSERT INTO emails_log (id, recipient_email, recipient_name, subject, type, html_body, qr_code_data, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          emailId,
+          to,
+          toName || to,
+          subject,
+          type,
+          html,
+          qrCodeData || null,
+          metadata ? JSON.stringify(metadata) : null
+        ]
+      );
+    } catch (dbErr) {
+      console.warn('Could not insert to emails_log:', dbErr.message);
+    }
 
     // 2. If Resend is configured, send actual external email via Resend
     if (resend) {
@@ -59,8 +76,9 @@ async function dispatchEmail({ to, toName, subject, type, html, qrCodeData, meta
         html,
         attachments
       });
+      console.log(`[EmailService] Resend email sent to ${to} (${subject})`);
     }
-    // 3. Fallback to SMTP if configured and Resend is not
+    // 3. Fallback to SMTP (Gmail / custom SMTP)
     else if (transporter) {
       const attachments = [];
       if (qrCodeData && qrCodeData.startsWith('data:image/png;base64,')) {
@@ -72,22 +90,28 @@ async function dispatchEmail({ to, toName, subject, type, html, qrCodeData, meta
         });
       }
 
+      const fromAddress = process.env.SMTP_FROM
+        ? process.env.SMTP_FROM.replace(/"/g, '')
+        : `"TicketPass" <${process.env.SMTP_USER}>`;
+
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || '"TicketPass" <tickets@ticketpass.app>',
+        from: fromAddress,
         to,
         subject,
         html,
         attachments
       });
+      console.log(`[EmailService] SMTP email delivered to ${to} (${subject})`);
+    } else {
+      console.log(`[EmailService] No external SMTP configured; email logged in In-App Mailbox for ${to}`);
     }
+
     return { success: true, emailId };
   } catch (err) {
-    console.error(`Email dispatch error for [${type}] to ${to}:`, err);
-    return { success: false, error: err.message };
+    console.error(`[EmailService] Dispatch error for [${type}] to ${to}:`, err.message);
+    return { success: false, error: err.message, emailId };
   }
 }
-
-// Triggering restart
 
 /**
  * Booking Confirmation with Embedded High-Res QR Ticket
@@ -149,7 +173,7 @@ export async function sendBookingConfirmation({ user, booking, show, event, venu
               </div>
               <div style="text-align: right;">
                 <div style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 600;">Total Paid</div>
-                <div style="font-size: 18px; font-weight: 800; color: #10b981;">$${booking.total_amount.toFixed(2)}</div>
+                <div style="font-size: 18px; font-weight: 800; color: #10b981;">$${Number(booking.total_amount || 0).toFixed(2)}</div>
               </div>
             </div>
 
