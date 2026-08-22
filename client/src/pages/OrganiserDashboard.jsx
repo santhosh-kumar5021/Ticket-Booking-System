@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import {
   BarChart3,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 
 export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
+  const { user, isOrganiser } = useAuth();
   const { showToast } = useNotification();
   const [analytics, setAnalytics] = useState(null);
   const [venues, setVenues] = useState([]);
@@ -128,6 +130,33 @@ export function OrganiserDashboard({ onOpenScanner, onSelectShow }) {
       showToast(err.message || 'Failed to schedule show', 'error');
     }
   };
+
+  // Auth guard
+  if (!user || !isOrganiser) {
+    return (
+      <div style={{ maxWidth: 600, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
+        <div className="glass-card" style={{ padding: 48, border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🎭</div>
+          <h2 style={{ fontSize: 24, fontWeight: 900, color: '#a5b4fc', marginBottom: 8 }}>Organiser Access Required</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
+            The Organiser Hub is only accessible to <strong style={{ color: '#a5b4fc' }}>Organiser</strong> or <strong style={{ color: '#fbbf24' }}>Admin</strong> accounts.
+            Use the role switcher bar at the top to switch roles.
+          </p>
+          <div style={{
+            background: 'rgba(99, 102, 241, 0.1)',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            borderRadius: 10,
+            padding: '12px 18px',
+            fontSize: 13,
+            color: '#a5b4fc',
+            marginBottom: 10
+          }}>
+            <strong>🎭 Organiser:</strong> cinema@starlight.com &nbsp;/&nbsp; Password@123
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading || !analytics) {
     return (

@@ -16,7 +16,8 @@ import {
   Clock,
   Sparkles,
   User,
-  Crown
+  Crown,
+  Loader
 } from 'lucide-react';
 
 export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
@@ -59,12 +60,21 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
     return () => clearInterval(timer);
   }, [activeOffer, clearOffer]);
 
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState(null);
+
   const handleRoleSwitch = async (userId, targetPage) => {
+    setSwitchError(null);
+    setIsSwitching(userId);
     try {
       await switchUser(userId);
       if (targetPage) onNavigate(targetPage);
     } catch (err) {
       console.error('Failed to switch role:', err);
+      setSwitchError('Backend is waking up… please try again in 10 seconds.');
+      setTimeout(() => setSwitchError(null), 8000);
+    } finally {
+      setIsSwitching(false);
     }
   };
 
@@ -101,6 +111,22 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
       )}
 
       {/* Role Switcher Toolbar */}
+      {switchError && (
+        <div style={{
+          background: 'rgba(245, 158, 11, 0.15)',
+          borderBottom: '1px solid rgba(245, 158, 11, 0.4)',
+          padding: '8px 24px',
+          fontSize: 12,
+          fontWeight: 600,
+          color: '#fbbf24',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }}>
+          <Loader size={13} style={{ animation: 'spin 1s linear infinite' }} />
+          ⚠️ {switchError}
+        </div>
+      )}
       <div style={{
         background: 'rgba(15, 23, 42, 0.95)',
         borderBottom: '1px solid rgba(99, 102, 241, 0.2)',
@@ -119,6 +145,7 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => handleRoleSwitch('usr-cust-1', 'events')}
+            disabled={!!isSwitching}
             style={{
               background: user?.id === 'usr-cust-1' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.05)',
               border: `1px solid ${user?.id === 'usr-cust-1' ? '#10b981' : 'rgba(255, 255, 255, 0.1)'}`,
@@ -127,18 +154,20 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
               borderRadius: 6,
               fontSize: 11,
               fontWeight: 700,
-              cursor: 'pointer',
+              cursor: isSwitching ? 'wait' : 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 4
+              gap: 4,
+              opacity: isSwitching && isSwitching !== 'usr-cust-1' ? 0.5 : 1
             }}
           >
-            <User size={12} />
+            {isSwitching === 'usr-cust-1' ? <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <User size={12} />}
             <span>🎟️ Customer (Alex)</span>
           </button>
 
           <button
             onClick={() => handleRoleSwitch('usr-org-1', 'organiser')}
+            disabled={!!isSwitching}
             style={{
               background: user?.role === 'ORGANISER' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.05)',
               border: `1px solid ${user?.role === 'ORGANISER' ? '#6366f1' : 'rgba(255, 255, 255, 0.1)'}`,
@@ -147,18 +176,20 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
               borderRadius: 6,
               fontSize: 11,
               fontWeight: 700,
-              cursor: 'pointer',
+              cursor: isSwitching ? 'wait' : 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 4
+              gap: 4,
+              opacity: isSwitching && isSwitching !== 'usr-org-1' ? 0.5 : 1
             }}
           >
-            <BarChart3 size={12} />
+            {isSwitching === 'usr-org-1' ? <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <BarChart3 size={12} />}
             <span>🎭 Organiser Hub</span>
           </button>
 
           <button
             onClick={() => handleRoleSwitch('usr-admin-1', 'admin')}
+            disabled={!!isSwitching}
             style={{
               background: user?.role === 'ADMIN' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255, 255, 255, 0.05)',
               border: `1px solid ${user?.role === 'ADMIN' ? '#f59e0b' : 'rgba(255, 255, 255, 0.1)'}`,
@@ -167,13 +198,14 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
               borderRadius: 6,
               fontSize: 11,
               fontWeight: 700,
-              cursor: 'pointer',
+              cursor: isSwitching ? 'wait' : 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 4
+              gap: 4,
+              opacity: isSwitching && isSwitching !== 'usr-admin-1' ? 0.5 : 1
             }}
           >
-            <Crown size={12} />
+            {isSwitching === 'usr-admin-1' ? <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Crown size={12} />}
             <span>👑 Admin Venue Builder</span>
           </button>
         </div>

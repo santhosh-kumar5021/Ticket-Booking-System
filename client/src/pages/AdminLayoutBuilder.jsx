@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import {
   Layers,
@@ -9,10 +10,12 @@ import {
   Eye,
   CheckCircle,
   Sparkles,
-  MapPin
+  MapPin,
+  Lock
 } from 'lucide-react';
 
 export function AdminLayoutBuilder({ onDone }) {
+  const { user, isAdmin } = useAuth();
   const { showToast } = useNotification();
   const [name, setName] = useState('Starlight Premiere Cinema');
   const [address, setAddress] = useState('100 Broadway Avenue');
@@ -70,6 +73,32 @@ export function AdminLayoutBuilder({ onDone }) {
 
   // Compute total capacity
   const totalCapacity = sections.reduce((sum, sec) => sum + (sec.rows.length * (sec.cols || 10)), 0);
+
+  // Auth guard
+  if (!user || !isAdmin) {
+    return (
+      <div style={{ maxWidth: 600, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
+        <div className="glass-card" style={{ padding: 48, border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>👑</div>
+          <h2 style={{ fontSize: 24, fontWeight: 900, color: '#fbbf24', marginBottom: 8 }}>Admin Access Required</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
+            The Venue & Seat Layout Builder is only accessible to <strong style={{ color: '#fbbf24' }}>Admin</strong> accounts.
+            Use the role switcher bar at the top to switch to the Admin account.
+          </p>
+          <div style={{
+            background: 'rgba(245, 158, 11, 0.1)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            borderRadius: 10,
+            padding: '12px 18px',
+            fontSize: 13,
+            color: '#fcd34d'
+          }}>
+            <strong>👑 Admin:</strong> admin@ticketpass.app &nbsp;/&nbsp; Password@123
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 24px 80px 24px' }}>
