@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
-  const { user, logout, switchUser, demoUsers, isOrganiser, isAdmin } = useAuth();
+  const { user, logout, switchUser, demoUsers, isOrganiser, isAdmin, isCustomer } = useAuth();
   const { activeOffer, clearOffer } = useNotification();
   const [emailCount, setEmailCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -58,8 +58,8 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
 
   return (
     <>
-      {/* Top Banner when a Waitlist Offer is Active */}
-      {activeOffer && (
+      {/* Top Banner when a Waitlist Offer is Active (Only for Customers who received an offer) */}
+      {activeOffer && isCustomer && (
         <div className="top-alert-banner">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 20 }}>⚡</span>
@@ -88,19 +88,28 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
         </div>
       )}
 
-      {/* Clean Main Navigation Bar */}
+      {/* Main Navigation Bar — Filtered Strictly by Role */}
       <header className="navbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
           {/* Brand Logo */}
-          <div className="nav-brand" style={{ cursor: 'pointer' }} onClick={() => onNavigate('events')}>
+          <div
+            className="nav-brand"
+            style={{ cursor: 'pointer' }}
+            onClick={() => {
+              if (isAdmin) onNavigate('admin');
+              else if (isOrganiser) onNavigate('organiser');
+              else onNavigate('events');
+            }}
+          >
             <div className="nav-brand-icon">
               <Ticket size={20} color="#ffffff" />
             </div>
             <span>Ticket<span style={{ color: '#818cf8' }}>Pass</span></span>
           </div>
 
-          {/* Navigation Links */}
+          {/* Navigation Links — Strictly Role-Based */}
           <nav className="nav-links">
+            {/* 1. Everyone sees Event Catalog */}
             <button
               onClick={() => onNavigate('events')}
               className={`nav-link ${currentPage === 'events' ? 'active' : ''}`}
@@ -109,7 +118,8 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
               <span>Events</span>
             </button>
 
-            {user && (
+            {/* 2. Customer specific views */}
+            {user && user.role === 'CUSTOMER' && (
               <>
                 <button
                   onClick={() => onNavigate('my-bookings')}
@@ -129,6 +139,7 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
               </>
             )}
 
+            {/* 3. Organiser specific views */}
             {isOrganiser && (
               <button
                 onClick={() => onNavigate('organiser')}
@@ -139,6 +150,7 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
               </button>
             )}
 
+            {/* 4. Admin specific views */}
             {isAdmin && (
               <button
                 onClick={() => onNavigate('admin')}
@@ -149,47 +161,52 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
               </button>
             )}
 
-            <button
-              onClick={() => onNavigate('scanner')}
-              className={`nav-link ${currentPage === 'scanner' ? 'active' : ''}`}
-            >
-              <QrCode size={15} />
-              <span>Gate Scanner</span>
-            </button>
+            {/* 5. Gate Scanner only for Organiser and Admin (Venue Staff) */}
+            {(isOrganiser || isAdmin) && (
+              <button
+                onClick={() => onNavigate('scanner')}
+                className={`nav-link ${currentPage === 'scanner' ? 'active' : ''}`}
+              >
+                <QrCode size={15} />
+                <span>Gate Scanner</span>
+              </button>
+            )}
           </nav>
         </div>
 
         {/* Right side Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* In-App Mailbox */}
-          <button
-            onClick={() => onNavigate('mailbox')}
-            className={`btn ${currentPage === 'mailbox' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ padding: '7px 14px', fontSize: 13, position: 'relative' }}
-            title="View In-App Emails & QR Code tickets"
-          >
-            <Mail size={15} />
-            <span>Mailbox</span>
-            {emailCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: -5,
-                right: -5,
-                background: '#ef4444',
-                color: '#fff',
-                borderRadius: '50%',
-                width: 18,
-                height: 18,
-                fontSize: 10,
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                {emailCount}
-              </span>
-            )}
-          </button>
+          {user && (
+            <button
+              onClick={() => onNavigate('mailbox')}
+              className={`btn ${currentPage === 'mailbox' ? 'btn-primary' : 'btn-outline'}`}
+              style={{ padding: '7px 14px', fontSize: 13, position: 'relative' }}
+              title="View In-App Emails & QR Code tickets"
+            >
+              <Mail size={15} />
+              <span>Mailbox</span>
+              {emailCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: -5,
+                  right: -5,
+                  background: '#ef4444',
+                  color: '#fff',
+                  borderRadius: '50%',
+                  width: 18,
+                  height: 18,
+                  fontSize: 10,
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {emailCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* User Profile / Auth Button */}
           {user ? (

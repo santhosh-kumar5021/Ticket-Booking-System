@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { Navbar } from './components/Navbar';
@@ -15,11 +15,22 @@ import { ScannerPage } from './pages/ScannerPage';
 import { MailboxPage } from './pages/MailboxPage';
 
 function AppContent() {
-  const { user } = useAuth();
+  const { user, isOrganiser, isAdmin } = useAuth();
   const [currentPage, setCurrentPage] = useState('events');
   const [selectedShowId, setSelectedShowId] = useState(null);
   const [claimOfferData, setClaimOfferData] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Automatically adjust view when role changes
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'ADMIN' && (currentPage === 'events' || currentPage === 'my-bookings' || currentPage === 'my-waitlist')) {
+        setCurrentPage('admin');
+      } else if (user.role === 'ORGANISER' && (currentPage === 'events' || currentPage === 'my-bookings' || currentPage === 'my-waitlist')) {
+        setCurrentPage('organiser');
+      }
+    }
+  }, [user?.role]);
 
   const handleNavigate = (page, data = null) => {
     if (page === 'show-booking' && data?.showId) {
@@ -32,7 +43,7 @@ function AppContent() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       {/* Top Navigation */}
       <Navbar
         currentPage={currentPage}
@@ -41,7 +52,7 @@ function AppContent() {
       />
 
       {/* Main Content Area */}
-      <main style={{ flex: 1 }}>
+      <main style={{ flex: 1, backgroundColor: 'var(--bg-primary)' }}>
         {currentPage === 'events' && (
           <EventCatalog
             onSelectEvent={(event) => {}}
@@ -94,7 +105,9 @@ function AppContent() {
         )}
 
         {currentPage === 'scanner' && (
-          <ScannerPage />
+          <ScannerPage
+            onOpenAuthModal={() => setShowAuthModal(true)}
+          />
         )}
 
         {currentPage === 'mailbox' && (
@@ -106,16 +119,19 @@ function AppContent() {
 
       {/* Footer */}
       <footer style={{
-        background: 'rgba(7, 9, 14, 0.95)',
+        background: '#07090e',
         borderTop: '1px solid var(--border-subtle)',
-        padding: '32px 24px',
+        padding: '28px 24px',
         textAlign: 'center',
         fontSize: 13,
         color: 'var(--text-muted)'
       }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <strong>TicketPass Platform</strong> — Real-Time High-Concurrency Seated Event Engine
+            <strong style={{ color: 'var(--text-secondary)' }}>TicketPass</strong> — High-Concurrency Seated Event Ticketing Engine
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            PostgreSQL Concurrency · Auto-Releasing Seat Holds · Real-Time Waitlist Pipeline
           </div>
         </div>
       </footer>
