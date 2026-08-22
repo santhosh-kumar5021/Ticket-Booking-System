@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { API_BASE } from '../services/api';
 
 const NotificationContext = createContext(null);
 
@@ -15,7 +16,7 @@ export function NotificationProvider({ children }) {
       return;
     }
 
-    const eventSource = new EventSource(`/api/sse/user?token=${token}`);
+    const eventSource = new EventSource(`${API_BASE}/sse/user?token=${token}`);
 
     eventSource.onmessage = (e) => {
       try {

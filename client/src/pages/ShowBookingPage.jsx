@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { api } from '../services/api';
+import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { SeatMap } from '../components/SeatMap';
@@ -64,7 +64,7 @@ export function ShowBookingPage({ showId, onBack, onOpenAuthModal }) {
 
   // Real-time SSE live updates for this show
   useEffect(() => {
-    const eventSource = new EventSource(`/api/sse/shows/${showId}`);
+    const eventSource = new EventSource(`${API_BASE}/sse/shows/${showId}`);
 
     eventSource.onmessage = (e) => {
       try {

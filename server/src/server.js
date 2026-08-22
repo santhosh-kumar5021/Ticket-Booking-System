@@ -8,6 +8,9 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { initDatabase } from './db/init.js';
 import { startHoldWorker, stopHoldWorker } from './services/holdWorker.js';
 
+import db from './db/connection.js';
+import { seedDatabase } from './db/seed.js';
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,6 +32,17 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Initialize DB tables
 initDatabase();
+
+// Auto-seed demo catalogue if empty
+try {
+  const eventCount = db.prepare('SELECT COUNT(*) as count FROM events').get()?.count || 0;
+  if (eventCount === 0) {
+    console.log('Database empty. Automatically populating initial seed dataset...');
+    await seedDatabase();
+  }
+} catch (err) {
+  console.error('Auto-seed error:', err);
+}
 
 // Start Background Hold TTL & Waitlist Cascade Worker (runs every 3 seconds)
 startHoldWorker(3000);
