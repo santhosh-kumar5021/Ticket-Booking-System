@@ -1,9 +1,6 @@
 import nodemailer from 'nodemailer';
-import { Resend } from 'resend';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db/connection.js';
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 function getMailTransporter() {
   const user = (process.env.SMTP_USER || 'uppalavenkey01@gmail.com').replace(/"/g, '').trim();
@@ -53,51 +50,31 @@ async function dispatchEmail({ to, toName, subject, type, html, qrCodeData, meta
       console.warn('Could not insert to emails_log:', dbErr.message);
     }
 
-    // 2. If Resend is configured, send actual external email via Resend
-    if (resend) {
+    // 2. Send external email via SMTP
+    const transporter = getMailTransporter();
+    if (transporter) {
       const attachments = [];
       if (qrCodeData && qrCodeData.startsWith('data:image/png;base64,')) {
         attachments.push({
           filename: 'ticket-qr.png',
-          content: qrCodeData.split('base64,')[1]
+          content: qrCodeData.split('base64,')[1],
+          encoding: 'base64',
+          cid: 'ticket_qr_code'
         });
       }
 
-      await resend.emails.send({
-        from: process.env.SMTP_FROM || 'TicketPass <onboarding@resend.dev>',
+      const fromAddress = process.env.SMTP_FROM
+        ? process.env.SMTP_FROM.replace(/"/g, '')
+        : `"TicketPass" <${(process.env.SMTP_USER || 'uppalavenkey01@gmail.com').replace(/"/g, '').trim()}>`;
+
+      await transporter.sendMail({
+        from: fromAddress,
         to,
         subject,
         html,
         attachments
       });
-      console.log(`[EmailService] Resend email sent to ${to} (${subject})`);
-    } else {
-      // 3. Fallback to Gmail SMTP with guaranteed transporter
-      const transporter = getMailTransporter();
-      if (transporter) {
-        const attachments = [];
-        if (qrCodeData && qrCodeData.startsWith('data:image/png;base64,')) {
-          attachments.push({
-            filename: 'ticket-qr.png',
-            content: qrCodeData.split('base64,')[1],
-            encoding: 'base64',
-            cid: 'ticket_qr_code'
-          });
-        }
-
-        const fromAddress = process.env.SMTP_FROM
-          ? process.env.SMTP_FROM.replace(/"/g, '')
-          : `"TicketPass" <${(process.env.SMTP_USER || 'uppalavenkey01@gmail.com').replace(/"/g, '').trim()}>`;
-
-        await transporter.sendMail({
-          from: fromAddress,
-          to,
-          subject,
-          html,
-          attachments
-        });
-        console.log(`[EmailService] SMTP email delivered to ${to} (${subject})`);
-      }
+      console.log(`[EmailService] SMTP email delivered to ${to} (${subject})`);
     }
 
     return { success: true, emailId };
