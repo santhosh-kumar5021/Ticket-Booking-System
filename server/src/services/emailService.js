@@ -3,8 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '../db/connection.js';
 
 export function getMailTransporter() {
-  const user = (process.env.SMTP_USER || 'uppalavenkey01@gmail.com').replace(/"/g, '').trim();
-  const pass = (process.env.SMTP_PASS || 'alcslwnktarzutzg').replace(/"/g, '').trim();
+  const user = (process.env.SMTP_USER || 'kopurinirmalajyothi@gmail.com').replace(/"/g, '').trim();
+  const pass = (process.env.SMTP_PASS || 'rqupqfddajqnpozq').replace(/"/g, '').trim();
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '465');
 
@@ -73,7 +73,7 @@ async function dispatchEmail({ to, toName, subject, type, html, qrCodeData, meta
 
       const fromAddress = process.env.SMTP_FROM
         ? process.env.SMTP_FROM.replace(/"/g, '')
-        : `"TicketPass" <${(process.env.SMTP_USER || 'uppalavenkey01@gmail.com').replace(/"/g, '').trim()}>`;
+        : `"TicketPass" <${(process.env.SMTP_USER || 'kopurinirmalajyothi@gmail.com').replace(/"/g, '').trim()}>`;
 
       await transporter.sendMail({
         from: fromAddress,
@@ -325,7 +325,7 @@ export async function sendWaitlistExpiredNotice({ user, show, event, category })
  */
 export async function sendDirectTestEmail({ to, subject, message }) {
   const transporter = getMailTransporter();
-  const user = (process.env.SMTP_USER || 'uppalavenkey01@gmail.com').replace(/"/g, '').trim();
+  const user = (process.env.SMTP_USER || 'kopurinirmalajyothi@gmail.com').replace(/"/g, '').trim();
   const fromAddress = process.env.SMTP_FROM
     ? process.env.SMTP_FROM.replace(/"/g, '')
     : `"TicketPass" <${user}>`;

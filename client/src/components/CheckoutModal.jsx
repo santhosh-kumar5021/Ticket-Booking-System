@@ -23,7 +23,7 @@ export function CheckoutModal({
   onBookingSuccess
 }) {
   const { user } = useAuth();
-  const [deliveryEmail, setDeliveryEmail] = useState(user?.email || 'uppalavenkey01@gmail.com');
+  const [deliveryEmail, setDeliveryEmail] = useState(user?.email || 'kopurinirmalajyothi@gmail.com');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('card');
