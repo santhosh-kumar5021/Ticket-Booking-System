@@ -74,9 +74,9 @@ export async function confirmBooking(req, res) {
 
     // Atomic transaction: Insert booking
     await db.query(`
-      INSERT INTO bookings (id, user_id, show_id, booking_reference, total_amount, status, payment_method)
-      VALUES (?, ?, ?, ?, ?, 'CONFIRMED', ?)
-    `, [bookingId, user.id, showId, bookingReference, totalAmount, paymentDetails?.method || 'CARD']);
+      INSERT INTO bookings (id, user_id, show_id, booking_reference, total_amount, status)
+      VALUES (?, ?, ?, ?, ?, 'CONFIRMED')
+    `, [bookingId, user.id, showId, bookingReference, totalAmount]);
 
     // Insert booking_seats & lock show_seats to BOOKED
     for (const seat of confirmedSeats) {
