@@ -4,14 +4,19 @@ import db from '../db/connection.js';
 
 function getMailTransporter() {
   const user = (process.env.SMTP_USER || 'uppalavenkey01@gmail.com').replace(/"/g, '').trim();
-  const pass = (process.env.SMTP_PASS || 'qnhznxmbrccnoylj').replace(/"/g, '').trim();
+  const pass = (process.env.SMTP_PASS || 'alcslwnktarzutzg').replace(/"/g, '').trim();
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '465');
 
   if (host.includes('gmail') || user.includes('@gmail.com')) {
     return nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass }
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: { user, pass },
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000
     });
   }
 
@@ -19,7 +24,10 @@ function getMailTransporter() {
     host,
     port,
     secure: port === 465,
-    auth: { user, pass }
+    auth: { user, pass },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 8000
   });
 }
 
