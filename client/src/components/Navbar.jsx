@@ -18,7 +18,8 @@ import {
   LogOut,
   ChevronDown,
   Clock,
-  Ticket
+  Ticket,
+  Crown
 } from 'lucide-react';
 
 export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
@@ -107,7 +108,7 @@ export function Navbar({ currentPage, onNavigate, onOpenAuthModal }) {
             }}
           >
             <div className="nav-brand-icon">
-              <Ticket size={18} color="#ffffff" />
+              <Crown size={18} color="#ffffff" />
             </div>
             <span>TicketPass</span>
           </div>

@@ -6,11 +6,14 @@ import {
   Calendar,
   Clock,
   Film,
+  Clapperboard,
   Music,
   Tv,
   Trophy,
   Smile,
   Briefcase,
+  LayoutGrid,
+  Cpu,
   Layers,
   Sparkles,
   ArrowRight,
@@ -20,13 +23,13 @@ import {
 } from 'lucide-react';
 
 const CATEGORIES = [
-  { id: 'ALL', label: 'All Experiences', icon: Layers },
-  { id: 'MOVIE', label: 'Movies & IMAX', icon: Film },
+  { id: 'ALL', label: 'All Experiences', icon: LayoutGrid },
+  { id: 'MOVIE', label: 'Movies & IMAX', icon: Clapperboard },
   { id: 'CONCERT', label: 'Concerts & Music', icon: Music },
-  { id: 'THEATRE', label: 'Broadway & Theatre', icon: Tv },
+  { id: 'THEATRE', label: 'Broadway & Theatre', icon: Tv }, // Keeping Tv as fallback if masks aren't easily available
   { id: 'SPORTS', label: 'Sports Matches', icon: Trophy },
   { id: 'COMEDY', label: 'Stand-up Comedy', icon: Smile },
-  { id: 'CONFERENCE', label: 'Tech & Summits', icon: Briefcase }
+  { id: 'CONFERENCE', label: 'Tech & Summits', icon: Cpu }
 ];
 
 export function EventCatalog({ onSelectEvent, onSelectShow }) {
@@ -72,38 +75,46 @@ export function EventCatalog({ onSelectEvent, onSelectShow }) {
     <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 24px 80px 24px' }}>
       {/* Hero Banner with Obsidian Teal Design */}
       <div
-        className="glass-card"
+        className="glass-card hero-lively-banner"
         style={{
-          padding: '48px 36px',
+          padding: '56px 48px',
           marginBottom: 36,
-          background: '#0a1c24',
-          border: '1px solid rgba(0, 184, 148, 0.18)',
-          borderRadius: 20,
+          background: 'linear-gradient(135deg, #0d121c 0%, #150f24 50%, #2a1128 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.05)',
+          borderRadius: 24,
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)'
         }}
       >
-        {/* Background concentric geometric circles */}
+        {/* Animated background glow and curves */}
         <div style={{
           position: 'absolute',
-          right: -80,
-          top: -80,
-          width: 500,
-          height: 500,
-          borderRadius: '50%',
-          border: '1px solid rgba(0, 184, 148, 0.08)',
-          pointerEvents: 'none'
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: '60%',
+          background: 'radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.15) 0%, transparent 60%), radial-gradient(circle at 60% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 50%)',
+          pointerEvents: 'none',
+          zIndex: 0
         }} />
-        <div style={{
-          position: 'absolute',
-          right: -10,
-          top: -10,
-          width: 360,
-          height: 360,
-          borderRadius: '50%',
-          border: '1px solid rgba(0, 184, 148, 0.06)',
-          pointerEvents: 'none'
-        }} />
+        
+        {/* SVG Curves */}
+        <svg style={{ position: 'absolute', right: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} viewBox="0 0 800 400" preserveAspectRatio="xMaxYMid slice">
+          <path d="M 400 400 Q 550 200 800 100" fill="none" stroke="rgba(236, 72, 153, 0.3)" strokeWidth="1" />
+          <path d="M 300 450 Q 500 150 850 50" fill="none" stroke="rgba(236, 72, 153, 0.15)" strokeWidth="2" />
+          <path d="M 500 450 Q 650 250 800 200" fill="none" stroke="rgba(245, 158, 11, 0.2)" strokeWidth="1" />
+          
+          {/* Glowing Nodes */}
+          <circle cx="550" cy="200" r="3" fill="#ec4899" filter="drop-shadow(0 0 4px #ec4899)" />
+          <circle cx="700" cy="130" r="2" fill="#f59e0b" filter="drop-shadow(0 0 4px #f59e0b)" />
+          <circle cx="650" cy="250" r="4" fill="#3b82f6" filter="drop-shadow(0 0 6px #3b82f6)" />
+          
+          {/* Small Stars */}
+          <circle cx="450" cy="100" r="1" fill="#fff" opacity="0.5" />
+          <circle cx="750" cy="280" r="1.5" fill="#fff" opacity="0.6" />
+          <circle cx="600" cy="80" r="1" fill="#fff" opacity="0.4" />
+        </svg>
 
         <div style={{ maxWidth: 760, position: 'relative', zIndex: 2 }}>
           <div style={{
@@ -111,21 +122,25 @@ export function EventCatalog({ onSelectEvent, onSelectShow }) {
             alignItems: 'center',
             gap: 8,
             padding: '6px 14px',
-            background: '#082228',
+            background: 'rgba(0, 206, 201, 0.1)',
             borderRadius: 20,
-            border: '1px solid rgba(0, 184, 148, 0.4)',
+            border: '1px solid rgba(0, 206, 201, 0.2)',
             fontSize: 12,
             fontWeight: 800,
-            color: '#00d2a0',
+            color: '#00cec9',
             textTransform: 'uppercase',
             letterSpacing: 0.8,
             marginBottom: 16
           }}>
-            <Sparkles size={14} color="#00d2a0" /> Event-Agnostic High-Concurrency Booking Engine
+            <Zap size={14} color="#00cec9" fill="#00cec9" /> Event-Agnostic High-Concurrency Booking Engine
           </div>
 
-          <h1 style={{ fontSize: 'clamp(28px, 4.5vw, 42px)', fontWeight: 800, lineHeight: 1.18, marginBottom: 16, color: '#ffffff' }}>
-            Book Real-Time Tickets for <span style={{ color: '#00d2a0' }}>Movies, Concerts, Sports & Shows</span>
+          <h1 style={{ fontSize: 'clamp(32px, 4.5vw, 48px)', fontWeight: 800, lineHeight: 1.2, marginBottom: 20, color: '#ffffff' }}>
+            Book Real-Time Tickets for <br />
+            <span style={{ color: '#00cec9' }}>Movies</span><span style={{ color: '#ffffff' }}>, </span>
+            <span style={{ color: '#3b82f6' }}>Concerts</span><span style={{ color: '#ffffff' }}>, </span>
+            <span style={{ color: '#ec4899' }}>Sports </span>
+            <span style={{ color: '#f59e0b' }}>& Shows</span>
           </h1>
 
           <p style={{ fontSize: 15, color: '#94a3b8', lineHeight: 1.6, marginBottom: 28 }}>
@@ -165,13 +180,20 @@ export function EventCatalog({ onSelectEvent, onSelectShow }) {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`btn ${isActive ? 'btn-primary' : 'btn-outline'}`}
+              className={`btn ${isActive ? 'btn-category-active' : 'btn-outline'}`}
               style={{
                 borderRadius: 24,
                 padding: '10px 18px',
                 fontSize: 13,
                 whiteSpace: 'nowrap',
-                fontWeight: isActive ? 800 : 600
+                fontWeight: isActive ? 800 : 600,
+                transition: 'all 0.3s ease',
+                ...(isActive ? {
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  borderColor: 'rgba(59, 130, 246, 0.8)',
+                  color: '#60a5fa',
+                  boxShadow: '0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 10px rgba(59, 130, 246, 0.1)'
+                } : {})
               }}
             >
               <Icon size={16} />
